@@ -103,7 +103,7 @@ std::vector<std::string> Server::parse_del(std::string& str, char del){
   return path;
 }
 /*
- * @brief fill in the to_req structure
+ * @brief fill in the request structure
  * */
 void Server::to_req(std::vector<std::string>&& vec){
   if(vec[0] == "FS_CREATE"){
