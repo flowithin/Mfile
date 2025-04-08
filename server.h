@@ -20,8 +20,10 @@ struct Request{
   uint32_t tar_block;
 };
 class Server{
+  struct addrinfo* res;
   struct sockaddr_storage their_addr;
   char* port;
+  int fd;
   public:
   Server(char* port);
   Server(int newfd);
@@ -32,10 +34,8 @@ class Server{
   void _close();
   void _recv();
   void _send();
-  struct addrinfo* res;
   std::string str_in;
   std::vector<std::string> parse_del(std::string& str, char del);
   void to_req(std::vector<std::string>&& vec);
-  int fd;
   Request request;
 };

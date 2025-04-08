@@ -121,6 +121,9 @@ void Server::to_req(std::vector<std::string>&& vec){
     request.rtype = Rtype::DELETE;
   }
 }
+void Server::_send(){
+  send(fd, request.content.c_str(), request.content.length(), 0);
+}
 void Server::_close(){
   close(fd);
 }

@@ -43,6 +43,7 @@ void Disk_Server::handle(){
   to_req(parse_del(str_in, ' '));
   print_req();
   //handle the request
+  try{
   switch (request.rtype) {
     case Rtype::READ:{
       _read();
@@ -61,7 +62,16 @@ void Disk_Server::handle(){
       break;
     }
   }
+  }
+  //send the response
   /**/
+  catch(const NofileErr& e){
+    std::cerr << e.msg << '\n';
+    _close();
+    delete this;//delete the handler when spawning thread
+    return;//NOTE: not sure if work
+  }
+  _send();
   _close();
   //NOTE: This may lead to Segmentation fualt
   delete this;//delete the handler when spawning thread
