@@ -1,15 +1,47 @@
 #include "disk.h"
+#include <boost/thread/lock_guard.hpp>
+#include <boost/thread/lock_types.hpp>
+#include <boost/thread/pthread/shared_mutex.hpp>
+#include <fs_server.h>
+#include <iterator>
+Lock Disk_Server::lock;
 Disk_Server::Disk_Server(int fd):Server(fd){}
-void Disk::_read(){
+/*
+ * @brief recursively access the path
+ * @return a lock to final
+ * */
+std::variant<boost::shared_lock<boost::shared_mutex>, boost::unique_lock<boost::shared_mutex>> Disk_Server::_access(boost::shared_lock<boost::shared_mutex>& curr_lk, int i){
+  //base case
+  const std::string curr_dir = request.path[i];
+  if(i == request.path.size()-1){
+    if(request.rtype == Rtype::READ)
+    {
+      return boost::shared_lock<boost::shared_mutex>(lock.find_lock(curr_dir));
+    } else {
+      return boost::unique_lock<boost::shared_mutex>(lock.find_lock(curr_dir));
+    }
+  }
+  fs_inode root;
+  //read inode
+  if(i == 0)// if the root
+  {
+    disk_readblock(0, &root);
+  }
+  // NOTE: will the fs always well formed?
+
+  
+  //traverse dir
+  
+}
+void Disk_Server::_read(){
+}
+void Disk_Server::_write(){
 
 }
-void Disk::_write(){
+void Disk_Server::_delete(){
 
 }
-void Disk::_delete(){
-
-}
-void Disk::_create(){
+void Disk_Server::_create(){
 
 }
 

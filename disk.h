@@ -24,19 +24,17 @@ struct Lock{
   boost::mutex mem_mt;
   std::unordered_map<std::string, boost::shared_mutex> file_locks;
   boost::shared_mutex& find_lock(std::string str);
+
 };
 
-class Disk{
+class Disk_Server : public Server{
   static Lock lock;
   static std::vector<int>* free_list;
-  protected:
+  std::variant<boost::shared_lock<boost::shared_mutex>, boost::unique_lock<boost::shared_mutex>> _access(boost::shared_lock<boost::shared_mutex>& nxt_lk, int i);
   void _write();
   void _read();
   void _create();
   void _delete();
-};
-
-class Disk_Server : public Disk, public Server{
   public:
   void print_req();
   Disk_Server(int newfd);
