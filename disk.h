@@ -30,7 +30,7 @@ struct Lock{
 class Disk_Server : public Server{
   static Lock lock;
   static std::vector<int>* free_list;
-  std::variant<boost::shared_lock<boost::shared_mutex>, boost::unique_lock<boost::shared_mutex>> _access(boost::shared_lock<boost::shared_mutex>& nxt_lk, int i);
+  std::variant<boost::shared_lock<boost::shared_mutex>, boost::unique_lock<boost::shared_mutex>> _access(boost::shared_lock<boost::shared_mutex>& curr_lk, int i, int& block);
   void _write();
   void _read();
   void _create();

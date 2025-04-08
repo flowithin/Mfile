@@ -4,13 +4,16 @@
 #include <boost/thread/pthread/shared_mutex.hpp>
 #include <fs_server.h>
 #include <iterator>
+using shared_lock = boost::shared_lock<boost::shared_mutex>;
 Lock Disk_Server::lock;
 Disk_Server::Disk_Server(int fd):Server(fd){}
 /*
  * @brief recursively access the path
  * @return a lock to final
+ * @note hand in hand lock might fail due to misunderstanding of compiler
  * */
-std::variant<boost::shared_lock<boost::shared_mutex>, boost::unique_lock<boost::shared_mutex>> Disk_Server::_access(boost::shared_lock<boost::shared_mutex>& curr_lk, int i){
+
+std::variant<boost::shared_lock<boost::shared_mutex>, boost::unique_lock<boost::shared_mutex>> Disk_Server::_access(boost::shared_lock<boost::shared_mutex>& curr_lk, int i, int& block){
   //base case
   const std::string curr_dir = request.path[i];
   if(i == request.path.size()-1){
@@ -21,14 +24,20 @@ std::variant<boost::shared_lock<boost::shared_mutex>, boost::unique_lock<boost::
       return boost::unique_lock<boost::shared_mutex>(lock.find_lock(curr_dir));
     }
   }
-  fs_inode root;
+  fs_inode curr_node;
   //read inode
-  if(i == 0)// if the root
-  {
-    disk_readblock(0, &root);
+  disk_readblock(block, &curr_node);
+  for(auto b : curr_node.blocks){
+    fs_direntry inv[8];
+    disk_readblock(b, &inv);
+    for(auto _i : inv){
+      if(_i.name == request.path[i+1]){
+        return shared_lock(lock.find_lock(request.path[i+1]));
+      }
+    }
   }
   // NOTE: will the fs always well formed?
-
+  //assume well formed now
   
   //traverse dir
   
