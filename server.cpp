@@ -1,4 +1,5 @@
 #include "disk.h"
+#include <cstdlib>
 /*Server::Server():port{}*/
 Server::Server(char* port):port{port}{}
 Server::Server(int newfd):fd{newfd}{}
@@ -113,8 +114,8 @@ void Server::to_req(std::vector<std::string>&& vec){
       ft = Ftype::DIR;
     else ft = Ftype::FILE;
     request = Request{Rtype::CREATE, ft, vec[1], parse_del(vec[2], '/'), "", 0 };
-  } else if(vec[0] == "FS_READ"){
-    request.rtype = Rtype::READ;
+  } else if(vec[0] == "FS_READBLOCK"){
+    request = Request{Rtype::READ, Ftype::FILE, vec[1], parse_del(vec[2], '/'), "", stoi(vec[3])};
   } else if(vec[0] == "FS_WRITE"){
     request.rtype = Rtype::WRITE;
   } else if(vec[0] == "FS_DELETE"){
@@ -128,6 +129,7 @@ void Server::_close(){
   close(fd);
 }
 void Server::run_server(){
+
   init();
   _accept();
 }

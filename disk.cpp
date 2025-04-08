@@ -7,6 +7,20 @@
 #include <iostream>
 #include <iterator>
 #include <utility>
+/*void probe(int block){*/
+/*  fs_inode in;*/
+/*  disk_readblock(block, in);*/
+/*  for(auto b : in.blocks)*/
+/*  {*/
+/*    fs_direntry dir[8];*/
+/*    if(in.type == )*/
+/*    disk_readblock(b, &dir);*/
+/*    for(auto d : dir){*/
+/*      file_locks[d.name];*/
+/**/
+/*    }*/
+/*  }*/
+/*}*/
 Lock::Lock(){
   file_locks["@ROOT"]; 
 }
@@ -36,10 +50,14 @@ lock_var Disk_Server::_access(shared_lock curr_lk, int i, int& block){
       if(_i.name == next_dir){
         //access next inode block
         block = _i.inode_block;
-        break;//avoid disk i/o
+        //initializing may use this function
+        goto found;//avoid disk i/o
       }
     }
   }
+  //not found:
+  throw NofileErr("not found!\n");
+found:
   int remnant = 2;
   if(request.rtype == Rtype::DELETE || request.rtype == Rtype::CREATE)
     remnant = 3;
@@ -64,12 +82,13 @@ void Disk_Server::_read(){
   fs_inode inode;
   disk_readblock(block, &inode);
   for(auto b : inode.blocks){
-    if(request.tar_block == b){
+    if(b != 0 && request.tar_block == b){
       disk_readblock(b, &request.content);
-      return;
+      break;
     }
   }
-  std::cerr<<"_read(): no block match!";
+  if(request.content == "")
+    std::cerr<<"_read(): no block match!";
 }
 void Disk_Server::_write(){
 
@@ -88,19 +107,24 @@ void Disk_Server::_create(){
  * */
 void Disk_Server::print_req(){
   switch (request.rtype) {
-    case Rtype::DELETE:std::cout << "DELETE\n";
-    case Rtype::READ:std::cout << "READ\n";
-    case Rtype::WRITE:std::cout << "WRITE\n";
-    case Rtype::CREATE:std::cout << "CREATE\n";
+    case Rtype::DELETE:{
+      std::cout << "DELETE\n";
+      break;
+    }
+    case Rtype::READ:{std::cout << "READ\n";break;}
+    case Rtype::WRITE:{std::cout << "WRITE\n";break;}
+    case Rtype::CREATE:{std::cout << "CREATE\n";break;}
   }
   switch (request.ftype) {
-    case Ftype::FILE:std::cout << "file\n";
-    case Ftype::DIR:std::cout << "dir\n";
+    case Ftype::FILE:{std::cout << "file\n";break;}
+    case Ftype::DIR:{std::cout << "dir\n";break;}
   }
   std::cout <<"usr: "<< request.usr << '\n';
   std::cout << "path: ";
   for(auto v : request.path)
     std::cout << v << " ";
+  std::cout << "\n";
+  std::cout << "block: " << request.tar_block << '\n';
 }
 
 /*
@@ -145,15 +169,20 @@ void Disk_Server::handle(){
   delete this;//delete the handler when spawning thread
 }
 
+/*
+ * @brief return mutex of the lock of the file
+ * @note that passing in an invalid file screw things up
+ *
+ * */
 boost::shared_mutex& Lock::find_lock(std::string str){
     //first aquiring memory lock
     boost::lock_guard<boost::mutex> __lock(mem_mt);
     //aquire shared mutex for read
     /*boost::shared_lock<boost::shared_mutex> _lock(lock.sd_mt);*/
     //check if the file exists
-    auto it = file_locks.find(str);
-    if(it != file_locks.end()){
-      return it->second;
-    }
-    throw NofileErr("cannot find file");
+    /*auto it = file_locks.find(str);*/
+    /*if(it != file_locks.end()){*/
+    /*  return it->second;*/
+    /*}*/
+  return file_locks[str];
   }

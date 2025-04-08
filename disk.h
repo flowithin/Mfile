@@ -29,11 +29,13 @@ struct Lock{
   boost::mutex mem_mt;
   std::unordered_map<std::string, boost::shared_mutex> file_locks;
   boost::shared_mutex& find_lock(std::string str);
+  friend void probe(int block);
 };
 
 class Disk_Server : public Server{
   static Lock lock;
   static std::vector<int>* free_list;
+  bool status = false;
   lock_var _access(shared_lock curr_lk, int i, int& block);
   void _write();
   void _read();
