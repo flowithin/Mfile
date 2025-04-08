@@ -1,9 +1,15 @@
 #include "disk.h"
+#include <boost/smart_ptr/make_shared_object.hpp>
 #include <boost/thread/lock_guard.hpp>
 #include <boost/thread/lock_types.hpp>
 #include <boost/thread/pthread/shared_mutex.hpp>
 #include <fs_server.h>
+#include <iostream>
 #include <iterator>
+#include <utility>
+Lock::Lock(){
+  file_locks["@ROOT"]; 
+}
 Lock Disk_Server::lock;
 Disk_Server::Disk_Server(int fd):Server(fd){}
 /*
@@ -13,7 +19,6 @@ Disk_Server::Disk_Server(int fd):Server(fd){}
  * @return also the block will be inode block number of the last entry on the path
  * @note hand in hand lock might fail due to misunderstanding of compiler
  * */
-
 
 lock_var Disk_Server::_access(shared_lock curr_lk, int i, int& block){
   //base case
@@ -31,6 +36,7 @@ lock_var Disk_Server::_access(shared_lock curr_lk, int i, int& block){
       if(_i.name == next_dir){
         //access next inode block
         block = _i.inode_block;
+        break;//avoid disk i/o
       }
     }
   }
@@ -48,10 +54,22 @@ lock_var Disk_Server::_access(shared_lock curr_lk, int i, int& block){
   return _access(shared_lock(lock.find_lock(next_dir)), i+1, block);
   // NOTE: will the fs always well formed?
   //assume well formed now
-  
-  
 }
 void Disk_Server::_read(){
+  int block;
+  lock_var sl;
+  if(request.path.size() > 1)
+    sl = _access(shared_lock(lock.find_lock("@ROOT")), 0, block);
+  else sl = shared_lock(lock.find_lock("@ROOT"));
+  fs_inode inode;
+  disk_readblock(block, &inode);
+  for(auto b : inode.blocks){
+    if(request.tar_block == b){
+      disk_readblock(b, &request.content);
+      return;
+    }
+  }
+  std::cerr<<"_read(): no block match!";
 }
 void Disk_Server::_write(){
 

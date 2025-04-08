@@ -23,11 +23,12 @@ struct NofileErr{
   NofileErr(std::string str):msg{str}{}
 };
 
+
 struct Lock{
+  Lock();
   boost::mutex mem_mt;
   std::unordered_map<std::string, boost::shared_mutex> file_locks;
   boost::shared_mutex& find_lock(std::string str);
-
 };
 
 class Disk_Server : public Server{
