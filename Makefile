@@ -15,7 +15,7 @@ endif
 CC+=-g -Wall -std=c++17 -Wno-deprecated-declarations
 
 # List of source files for your file server
-FS_SOURCES=fs.cpp
+FS_SOURCES=server.cpp disk.cpp server_run.cpp
 
 # Generate the names of the file server's object files
 FS_OBJS=${FS_SOURCES:.cpp=.o}
@@ -32,7 +32,7 @@ fs: ${FS_OBJS} ${LIBFSSERVER}
 	${CC} -o $@ $^ -l${BOOST_THREAD} -lboost_system -pthread -ldl
 
 %: %.cpp ${LIBVMAPP}
-	${CC} -o $@ $^ -ldl
+	${CC} -o $@ $^ ${LIBFSCLIENT} -ldl 
 
 # Generic rules for compiling a source file to an object file
 %.o: %.cpp
