@@ -8,38 +8,47 @@ Lock Disk_Server::lock;
 Disk_Server::Disk_Server(int fd):Server(fd){}
 /*
  * @brief recursively access the path
- * @return a lock to final
+ * @requirement size of the vector > 2
+ * @return a lock to final entry
  * @return also the block will be inode block number of the last entry on the path
  * @note hand in hand lock might fail due to misunderstanding of compiler
  * */
 
-std::variant<shared_lock, unique_lock> Disk_Server::_access(shared_lock curr_lk, int i, int& block){
+
+lock_var Disk_Server::_access(shared_lock curr_lk, int i, int& block){
   //base case
-  const std::string curr_dir = request.path[i];
-  if(i == request.path.size()-1){
-    if(request.rtype == Rtype::READ)
-    {
-      return shared_lock(lock.find_lock(curr_dir));
-    } else {
-      return unique_lock(lock.find_lock(curr_dir));
-    }
-  }
+  const std::string curr_dir = request.path[i];//safe
+  const std::string next_dir = request.path[i + 1];//safe
+  //base case
   fs_inode curr_node;
   //read inode
   disk_readblock(block, &curr_node);
+  //traverse direntry array
   for(auto b : curr_node.blocks){
     fs_direntry inv[8];
     disk_readblock(b, &inv);
     for(auto _i : inv){
-      if(_i.name == request.path[i+1]){
-        return _access(shared_lock(lock.find_lock(request.path[i+1])), i+1, block = _i.inode_block);
+      if(_i.name == next_dir){
+        //access next inode block
+        block = _i.inode_block;
       }
     }
   }
+  int remnant = 2;
+  if(request.rtype == Rtype::DELETE || request.rtype == Rtype::CREATE)
+    remnant = 3;
+  if(i == request.path.size() - remnant){
+    if(request.rtype == Rtype::WRITE)
+    {
+      return unique_lock(lock.find_lock(next_dir));
+    } else {
+      return shared_lock(lock.find_lock(next_dir));
+    }
+  }
+  return _access(shared_lock(lock.find_lock(next_dir)), i+1, block);
   // NOTE: will the fs always well formed?
   //assume well formed now
   
-  //traverse dir
   
 }
 void Disk_Server::_read(){

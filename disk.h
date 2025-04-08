@@ -13,6 +13,7 @@
 
 using shared_lock = boost::shared_lock<boost::shared_mutex>;
 using unique_lock = boost::unique_lock<boost::shared_mutex>;
+using lock_var = std::variant<shared_lock, unique_lock>;
 /*struct Read_lock(){*/
 /*  ReadLock(boost::shared_mutex& sd_mt)*/
 /*        : mem_lock(mem_mt), shared_lock(sd_mt) {}*/
@@ -32,7 +33,7 @@ struct Lock{
 class Disk_Server : public Server{
   static Lock lock;
   static std::vector<int>* free_list;
-  std::variant<shared_lock, unique_lock> _access(shared_lock curr_lk, int i, int& block);
+  lock_var _access(shared_lock curr_lk, int i, int& block);
   void _write();
   void _read();
   void _create();
