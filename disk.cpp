@@ -4,24 +4,24 @@
 #include <boost/thread/pthread/shared_mutex.hpp>
 #include <fs_server.h>
 #include <iterator>
-using shared_lock = boost::shared_lock<boost::shared_mutex>;
 Lock Disk_Server::lock;
 Disk_Server::Disk_Server(int fd):Server(fd){}
 /*
  * @brief recursively access the path
  * @return a lock to final
+ * @return also the block will be inode block number of the last entry on the path
  * @note hand in hand lock might fail due to misunderstanding of compiler
  * */
 
-std::variant<boost::shared_lock<boost::shared_mutex>, boost::unique_lock<boost::shared_mutex>> Disk_Server::_access(boost::shared_lock<boost::shared_mutex>& curr_lk, int i, int& block){
+std::variant<shared_lock, unique_lock> Disk_Server::_access(shared_lock curr_lk, int i, int& block){
   //base case
   const std::string curr_dir = request.path[i];
   if(i == request.path.size()-1){
     if(request.rtype == Rtype::READ)
     {
-      return boost::shared_lock<boost::shared_mutex>(lock.find_lock(curr_dir));
+      return shared_lock(lock.find_lock(curr_dir));
     } else {
-      return boost::unique_lock<boost::shared_mutex>(lock.find_lock(curr_dir));
+      return unique_lock(lock.find_lock(curr_dir));
     }
   }
   fs_inode curr_node;
@@ -32,7 +32,7 @@ std::variant<boost::shared_lock<boost::shared_mutex>, boost::unique_lock<boost::
     disk_readblock(b, &inv);
     for(auto _i : inv){
       if(_i.name == request.path[i+1]){
-        return shared_lock(lock.find_lock(request.path[i+1]));
+        return _access(shared_lock(lock.find_lock(request.path[i+1])), i+1, block = _i.inode_block);
       }
     }
   }
