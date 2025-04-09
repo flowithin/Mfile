@@ -3,9 +3,11 @@
 #include <boost/thread/lock_guard.hpp>
 #include <boost/thread/lock_types.hpp>
 #include <boost/thread/pthread/shared_mutex.hpp>
+#include <fs_param.h>
 #include <fs_server.h>
 #include <iostream>
 #include <iterator>
+#include <string>
 #include <utility>
 /*void probe(int block){*/
 /*  fs_inode in;*/
@@ -73,7 +75,7 @@ found:
   //assume well formed now
 }
 void Disk_Server::_read(){
-  int block;
+  int block=0;
   lock_var sl;
   if(request.path.size() > 1)
     sl = _access(shared_lock(lock.find_lock("@ROOT")), 0, block);
@@ -85,11 +87,11 @@ void Disk_Server::_read(){
   for(auto b : inode.blocks){
     if(b != 0 && request.tar_block == b){
       disk_readblock(b, &request.content);
-      break;
+      goto succeed;
     }
   }
-  if(request.content == "")
-    std::cerr<<"_read(): no block match!";
+  throw NofileErr("no block matched");
+succeed:
 }
 void Disk_Server::_write(){
 

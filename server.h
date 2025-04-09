@@ -1,6 +1,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <fs_param.h>
 #include <iostream>
 #include <string>
 #include <sys/socket.h>
@@ -16,7 +17,8 @@ struct Request{
   Ftype ftype;
   std::string usr;
   std::vector<std::string> path;
-  std::string content;
+  /*std::string content;*/
+  char content[FS_BLOCKSIZE];
   uint32_t tar_block;
 };
 class Server{

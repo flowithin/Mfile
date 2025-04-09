@@ -1,5 +1,9 @@
 #include "disk.h"
+#include <cstdint>
 #include <cstdlib>
+#include <cstring>
+#include <fs_param.h>
+#include <string>
 /*Server::Server():port{}*/
 Server::Server(char* port):port{port}{}
 Server::Server(int newfd):fd{newfd}{}
@@ -64,7 +68,7 @@ while (1) {
 
 void Server::_recv(){
       // Receive message from client.  Use recv().
-      int numbytes = 0;
+  int numbytes = 0;
   int MAX_MESSAGE_SIZE = 256;
   char buf[MAX_MESSAGE_SIZE];
   if((numbytes = recv(fd, buf, MAX_MESSAGE_SIZE-1, 0)) == -1){
@@ -123,7 +127,15 @@ void Server::to_req(std::vector<std::string>&& vec){
   }
 }
 void Server::_send(){
-  send(fd, request.content.c_str(), request.content.length(), 0);
+  /*std::string out = str_in + std::string(request.content);*/
+  uint32_t size;
+  if(request.rtype == Rtype::READ)
+    size = FS_BLOCKSIZE + str_in.length() + 1;
+  else size = str_in.length() + 1;
+  char out[size]={};
+  strcpy(out, str_in.c_str()); 
+  memcpy(out + str_in.length()+1, request.content, FS_BLOCKSIZE);
+  send(fd, out, size, 0);
 }
 void Server::_close(){
   close(fd);
