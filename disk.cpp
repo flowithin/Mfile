@@ -22,7 +22,6 @@
 /*  }*/
 /*}*/
 Lock::Lock(){
-  file_locks["@ROOT"]; 
 }
 Lock Disk_Server::lock;
 Disk_Server::Disk_Server(int fd):Server(fd){}
@@ -81,6 +80,8 @@ void Disk_Server::_read(){
   else sl = shared_lock(lock.find_lock("@ROOT"));
   fs_inode inode;
   disk_readblock(block, &inode);
+  if(inode.type == 'd')
+    throw NofileErr("expected file found dir\n");
   for(auto b : inode.blocks){
     if(b != 0 && request.tar_block == b){
       disk_readblock(b, &request.content);
