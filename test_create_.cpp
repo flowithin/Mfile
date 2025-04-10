@@ -2,6 +2,8 @@
 #include <iostream>
 #include <cassert>
 #include <cstdlib>
+#include <sstream>
+#include <string>
 #include "fs_client.h"
 
 
@@ -21,7 +23,6 @@ int main(int argc, char* argv[]) {
     server_port = atoi(argv[2]);
 
     fs_clientinit(server, server_port);
-
-    status = fs_delete("user2", "/dir7");
+    status = fs_create("user1", "/dir8", 'd');
     assert(!status);
 }

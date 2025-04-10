@@ -119,12 +119,14 @@ void Disk_Server::access_inode(int block, fs_inode& in, char& type){
 bool dir_find(const int in_block, int& block, std::string target, int& num_entry, fs_direntry* _inv, int& i){
   bool found = false;
   int free_block = block;
+  num_entry = 0;
   fs_direntry inv[8];
   disk_readblock(in_block, inv);
   /*std::cout << "block: " << block << '\n';*/
   std::cout << "free_block: " << free_block << '\n';
   int j = 0;
   for(; j < 8; j++){
+    *(_inv + j) = *(inv + j);
     if(inv[j].inode_block == 0)
     {
       /*std::cout << "num_entry: " << num_entry << '\n' << "i: " << i << '\n';*/
@@ -138,7 +140,6 @@ bool dir_find(const int in_block, int& block, std::string target, int& num_entry
       found = true;
     }
     num_entry++;
-    *(_inv + j) = *(inv + j);
   }
   if(!found)
     block = free_block;
@@ -326,7 +327,7 @@ void Disk_Server::_create(){
   int i = 0;
   for(; i < din.size; i++){
     //must traverse to see if there is dup name
-    int _n_, _i_, _entry = 8;//place holder
+    int _n_, _i_, _entry = entry;//place holder
     if(dir_find(din.blocks[i], _entry, name, _n_, inv + i * 8, _i_))
       throw NofileErr("already exists");
     entry = std::min(entry, i * 8 + _entry);
@@ -350,8 +351,9 @@ void Disk_Server::_create(){
     _inv[0].inode_block = file_inode_block;
     dir_b_w = free_block;
   } else {
+    std::cout << "entry: " << entry << '\n';
     for(int i = 0; i < 8; i++){
-      _inv[i] = inv[entry/8 + i];
+      _inv[i] = inv[entry/8 * 8 + i];
       /*std::cout << inv[entry/8 + i].name << ' ' << inv[entry/8 + i].inode_block << '\n';*/
     }
     strcpy(_inv[entry%8].name,name.c_str());

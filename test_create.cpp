@@ -2,6 +2,8 @@
 #include <iostream>
 #include <cassert>
 #include <cstdlib>
+#include <sstream>
+#include <string>
 #include "fs_client.h"
 
 
@@ -24,33 +26,44 @@ int main(int argc, char* argv[]) {
     status = fs_create("user1", "/dir", 'd');
     assert(!status);
   /**/
-    status = fs_create("user1", "/dir/file", 'f');
+  /*  status = fs_create("user1", "/dir/file", 'f');*/
+  /*  assert(!status);*/
+  /*  status = fs_create("user1", "/dir/dir2", 'd');*/
+  /*  assert(!status);*/
+  /*//NOTE:same file name in different dir*/
+  /*  status = fs_create("user1", "/dir/dir2/file", 'f');*/
+  /*  assert(!status);*/
+  /*  status = fs_create("user1", "/dir/dir2/dir3", 'd');*/
+  /*  assert(!status);*/
+  /*  status = fs_create("user1", "/dir/dir2/dir3/file2", 'f');*/
+  /*  assert(!status);*/
+  /*  status = fs_create("user2", "/dir22", 'd');*/
+  /*  assert(!status);*/
+  for(int i = 0; i < 8; i++){
+    std::stringstream ss;
+    ss << "/dir" << i;
+    /*std::string dir_name = "/dir2" + (i + '0');*/
+    std::cout << ss.str() << "\n";
+    status = fs_create("user2", ss.str().c_str(), 'd');
     assert(!status);
-    status = fs_create("user1", "/dir/dir2", 'd');
-    assert(!status);
-  //NOTE:same file name in different dir
-    status = fs_create("user1", "/dir/dir2/file", 'f');
-    assert(!status);
-    status = fs_create("user1", "/dir/dir2/dir3", 'd');
-    assert(!status);
-    status = fs_create("user1", "/dir/dir2/dir3/file2", 'f');
-    assert(!status);
-    status = fs_create("user2", "/dir22", 'd');
-    assert(!status);
+  }
+
+
+
 
     /**/
-    status = fs_create("user2", "/dir22/file22", 'f');
-    assert(!status);
-    status = fs_create("user2", "/dir22/dir33", 'd');
-    assert(!status);
-    status = fs_create("user2", "/dir22/dir33/file", 'f');
-    assert(!status);
-    status = fs_create("user2", "/dir22/dir33/dir3", 'd');
-    assert(!status);
-    status = fs_create("user2", "/dir22/dir33/dir3/file2", 'f');
-    assert(!status);
-    status = fs_create("user2", "/file", 'f');
-    assert(!status);
+    /*status = fs_create("user2", "/dir22/file22", 'f');*/
+    /*assert(!status);*/
+    /*status = fs_create("user2", "/dir22/dir33", 'd');*/
+    /*assert(!status);*/
+    /*status = fs_create("user2", "/dir22/dir33/file", 'f');*/
+    /*assert(!status);*/
+    /*status = fs_create("user2", "/dir22/dir33/dir3", 'd');*/
+    /*assert(!status);*/
+    /*status = fs_create("user2", "/dir22/dir33/dir3/file2", 'f');*/
+    /*assert(!status);*/
+    /*status = fs_create("user2", "/file", 'f');*/
+    /*assert(!status);*/
     /**/
     /**/
 
