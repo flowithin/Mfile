@@ -2,6 +2,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <fs_param.h>
+#include "fs_server.h"
 #include <iostream>
 #include <string>
 #include <sys/socket.h>

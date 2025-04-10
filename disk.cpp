@@ -16,6 +16,7 @@
 #include <numeric>
 #include <sstream>
 #include <string>
+#include <unistd.h>
 #include <utility>
 #include <vector>
 
@@ -107,7 +108,7 @@ void Disk_Server::access_inode(int block, fs_inode& in, char& type){
 /*
  * @brief find a file in directory 
  * @param in_block: one of the disk block of the dir
- * @param block: inode block of the found entry
+ * @param block: inode block of the found entry (if not found, this is the first not occupied entry in current dir block)
  * @param inv: fs_direntry inv[8] used to type cast read value
  * @param num_entry: number of entry in the block of the dir
  * @param i: the position of the found entry in the block
@@ -137,10 +138,10 @@ bool dir_find(const int in_block, int& block, std::string target, int& num_entry
       found = true;
     }
     num_entry++;
+    *(_inv + j) = *(inv + j);
   }
   if(!found)
     block = free_block;
-  *_inv = *inv;
   return found;
 }
 
@@ -208,6 +209,8 @@ void Disk_Server::_readwrite(){
       sl = shared_lock(lock.find_lock("@ROOT"));
     else sl = unique_lock(lock.find_lock("@ROOT"));
   }
+  std::cout << "here\n";
+  /*sleep(1000);*/
   fs_inode inode;
   //reading the file's inode
   char _type_ = 'f';
@@ -301,6 +304,7 @@ void Disk_Server::_delete(){
 
 
 void Disk_Server::_create(){
+  //TODO: Shrink this chunk with delete
   int dir_block = 0; 
   std::string name = *(request.path.end()-1);
   if(request.path.size() == 1)
@@ -327,7 +331,6 @@ void Disk_Server::_create(){
       throw NofileErr("already exists");
     entry = std::min(entry, i * 8 + _entry);
   }
-  
   int _s_, free_block = 0, dir_b_w;//free block for new dir entry
   fs_direntry _inv[8];
   bool need_expand=false;
@@ -349,6 +352,7 @@ void Disk_Server::_create(){
   } else {
     for(int i = 0; i < 8; i++){
       _inv[i] = inv[entry/8 + i];
+      /*std::cout << inv[entry/8 + i].name << ' ' << inv[entry/8 + i].inode_block << '\n';*/
     }
     strcpy(_inv[entry%8].name,name.c_str());
     _inv[entry%8].inode_block = file_inode_block;
@@ -409,6 +413,7 @@ void Disk_Server::handle(){
     }
     case Rtype::WRITE:{
       _readwrite();
+
       break;
     }
     case Rtype::CREATE:{

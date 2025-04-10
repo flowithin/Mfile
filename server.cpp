@@ -118,7 +118,15 @@ std::vector<std::string> Server::parse_del(std::string& str, char del){
  * @brief fill in the request structure
  * */
 void Server::to_req(std::vector<std::string>&& vec){
+  if(vec[1].size() > FS_MAXUSERNAME)
+    throw NofileErr("user name too long");
+  if(vec[2].size() > FS_MAXPATHNAME)
+    throw NofileErr("path name too long");
   std::vector<std::string> p = parse_del(vec[2], '/');
+  for(auto e : p){
+    if(e.size() > FS_MAXFILENAME)
+      throw NofileErr("file name too long");
+  }
   if(p[0] != "@ROOT")
     throw NofileErr("mal formed path");
   if(vec[0] == "FS_CREATE"){
@@ -129,15 +137,17 @@ void Server::to_req(std::vector<std::string>&& vec){
     else ft = Ftype::FILE;
     request = Request{Rtype::CREATE, ft, vec[1], p, "", 0 };
   } else if(vec[0] == "FS_READBLOCK"){
-    request = Request{Rtype::READ, Ftype::FILE, vec[1], parse_del(vec[2], '/'), "", stoi(vec[3])};
+    request = Request{Rtype::READ, Ftype::FILE, vec[1], p, "", stoi(vec[3])};
   } else if(vec[0] == "FS_WRITEBLOCK"){
+    if(vec[1] == "")
+      throw NofileErr("user name can't be empty");
     request.rtype = Rtype::WRITE;
     request.ftype = Ftype::FILE;
     request.usr = vec[1];
-    request.path = parse_del(vec[2], '/');
+    request.path = p;
     request.tar_block = stoi(vec[3]);
   } else if(vec[0] == "FS_DELETE"){
-    request = Request{Rtype::DELETE, Ftype::FILE, vec[1], parse_del(vec[2], '/'), "", 0};
+    request = Request{Rtype::DELETE, Ftype::FILE, vec[1], p, "", 0};
   }
 }
 void Server::_send(){

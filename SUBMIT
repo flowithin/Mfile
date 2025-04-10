@@ -4,3 +4,4 @@ disk.h
 server.cpp
 server.h
 server_run.cpp
+*.fs

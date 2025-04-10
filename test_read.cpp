@@ -19,6 +19,8 @@ int main(int argc, char* argv[]) {
     server_port = atoi(argv[2]);
 
     fs_clientinit(server, server_port);
-    status = fs_readblock("xxxx", "/jtw/abc.txt", 6, readdata);
+
+    status = fs_readblock("user1", "/dir/file", 0, readdata);
     assert(!status);
+
 }
