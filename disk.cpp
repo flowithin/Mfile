@@ -397,11 +397,11 @@ void Disk_Server::print_req(){
  * @brief This function handles the requests
  * */
 void Disk_Server::handle(){
+  try{
   _recv();
   to_req(parse_del(str_in, ' '));
   print_req();
   //handle the request
-  try{
   switch (request.rtype) {
     case Rtype::READ:{
       _readwrite();

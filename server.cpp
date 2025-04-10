@@ -108,7 +108,7 @@ std::vector<std::string> Server::parse_del(std::string& str, char del){
     int n = file_str.find(' ');
     /*std::cout << "n= " << n << '\n';*/
     if (n != -1)
-      std::cerr << "space shouldn't appear!!\n";
+      throw NofileErr("space shouldn't appear!!\n");
     path.push_back(file_str);
     /*std::cout << path[i++] << '\n';*/
   }
@@ -118,13 +118,16 @@ std::vector<std::string> Server::parse_del(std::string& str, char del){
  * @brief fill in the request structure
  * */
 void Server::to_req(std::vector<std::string>&& vec){
+  std::vector<std::string> p = parse_del(vec[2], '/');
+  if(p[0] != "@ROOT")
+    throw NofileErr("mal formed path");
   if(vec[0] == "FS_CREATE"){
     // TODO: check if the size and format are correct
     Ftype ft;
     if(vec[3] == "d")
       ft = Ftype::DIR;
     else ft = Ftype::FILE;
-    request = Request{Rtype::CREATE, ft, vec[1], parse_del(vec[2], '/'), "", 0 };
+    request = Request{Rtype::CREATE, ft, vec[1], p, "", 0 };
   } else if(vec[0] == "FS_READBLOCK"){
     request = Request{Rtype::READ, Ftype::FILE, vec[1], parse_del(vec[2], '/'), "", stoi(vec[3])};
   } else if(vec[0] == "FS_WRITEBLOCK"){
