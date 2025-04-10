@@ -34,15 +34,16 @@ struct Lock{
 
 class Disk_Server : public Server{
   static Lock lock;
-  static std::vector<int>* free_list;
   bool status = false;
+  void access_inode(int block, fs_inode& in, char& type);
   lock_var _access(shared_lock curr_lk, int i, int& block);
-  void _write();
-  void _read();
+  void _readwrite();
   void _create();
   void _delete();
   public:
+  static std::vector<int> free_list;
   void print_req();
   Disk_Server(int newfd);
   void handle();
+friend int free_list_access(int idx, int& size, int& block, bool toggle);
 };

@@ -1,3 +1,4 @@
+#include <cstring>
 #include <iostream>
 #include <cassert>
 #include <cstdlib>
@@ -9,6 +10,7 @@ int main(int argc, char* argv[]) {
     int server_port;
 
     char readdata[FS_BLOCKSIZE];
+    strcpy(readdata, "hellow");
     int status;
 
     if (argc != 3) {
@@ -19,6 +21,12 @@ int main(int argc, char* argv[]) {
     server_port = atoi(argv[2]);
 
     fs_clientinit(server, server_port);
-    status = fs_readblock("xxxx", "/jtw/abc.txt", 6, readdata);
+    status = fs_create("user1", "/dir", 'd');
     assert(!status);
+
+    status = fs_create("user1", "/dir/file", 'f');
+    assert(!status);
+
+
+
 }

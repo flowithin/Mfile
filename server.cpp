@@ -64,12 +64,13 @@ while (1) {
 }
 /*
  * @brief recv() in socket.h wrapped up
+ * @note it modifies request here before to_req is called
  * */
 
 void Server::_recv(){
       // Receive message from client.  Use recv().
   int numbytes = 0;
-  int MAX_MESSAGE_SIZE = 256;
+  int MAX_MESSAGE_SIZE = 1000;
   char buf[MAX_MESSAGE_SIZE];
   if((numbytes = recv(fd, buf, MAX_MESSAGE_SIZE-1, 0)) == -1){
         perror("recv");
@@ -83,6 +84,12 @@ void Server::_recv(){
       buf[numbytes] = '\0';
       // Print message from client.
       str_in = buf;
+      /*std::cout << "str_in.len = " << str_in.length() << '\n';*/
+      if(numbytes > str_in.length()){
+    //write
+      memcpy(request.content, buf+str_in.length()+1, FS_BLOCKSIZE);
+  }
+  buf[str_in.length()] = '#'; 
       printf("server received %s\n size: %d\n", buf, numbytes);
       // Close connection.  Use close().
 }
@@ -120,22 +127,31 @@ void Server::to_req(std::vector<std::string>&& vec){
     request = Request{Rtype::CREATE, ft, vec[1], parse_del(vec[2], '/'), "", 0 };
   } else if(vec[0] == "FS_READBLOCK"){
     request = Request{Rtype::READ, Ftype::FILE, vec[1], parse_del(vec[2], '/'), "", stoi(vec[3])};
-  } else if(vec[0] == "FS_WRITE"){
+  } else if(vec[0] == "FS_WRITEBLOCK"){
     request.rtype = Rtype::WRITE;
+    request.ftype = Ftype::FILE;
+    request.usr = vec[1];
+    request.path = parse_del(vec[2], '/');
+    request.tar_block = stoi(vec[3]);
   } else if(vec[0] == "FS_DELETE"){
-    request.rtype = Rtype::DELETE;
+    request = Request{Rtype::DELETE, Ftype::FILE, vec[1], parse_del(vec[2], '/'), "", 0};
   }
 }
 void Server::_send(){
   /*std::string out = str_in + std::string(request.content);*/
-  uint32_t size;
+  uint32_t size = str_in.length() + 1;
   if(request.rtype == Rtype::READ)
-    size = FS_BLOCKSIZE + str_in.length() + 1;
-  else size = str_in.length() + 1;
-  char out[size]={};
-  strcpy(out, str_in.c_str()); 
-  memcpy(out + str_in.length()+1, request.content, FS_BLOCKSIZE);
-  send(fd, out, size, 0);
+  {
+    size = FS_BLOCKSIZE + str_in.length() + 1; 
+    char out[size]={};
+    strcpy(out, str_in.c_str()); 
+    memcpy(out + str_in.length()+1, request.content, FS_BLOCKSIZE);
+    send(fd, out, size, 0);
+  } else{
+    char out[size]={};
+    strcpy(out, str_in.c_str()); 
+    send(fd, out, size, 0);
+  }
 }
 void Server::_close(){
   close(fd);
