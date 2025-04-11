@@ -1,5 +1,4 @@
 #include <cstring>
-#include <sstream>
 #include <iostream>
 #include <cassert>
 #include <cstdlib>
@@ -22,14 +21,9 @@ int main(int argc, char* argv[]) {
     server_port = atoi(argv[2]);
 
     fs_clientinit(server, server_port);
-  for(int i = 7; i < 15; i++){
-    std::stringstream ss;
-    ss << "/dir" << i;
-    /*std::string dir_name = "/dir2" + (i + '0');*/
-    status = fs_delete("user2", ss.str().c_str());
+    status = fs_delete("user1", "/dir8");
     assert(!status);
- }
 
-
-
+    status = fs_delete("user2", "/dir7");
+    assert(!status);
 }

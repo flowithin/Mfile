@@ -6,6 +6,7 @@
 #include <cassert>
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 #include <fs_client.h>
 #include <fs_param.h>
 #include <fs_server.h>
@@ -232,7 +233,9 @@ void Disk_Server::_readwrite(){
     if(request.tar_block != inode.size)
       throw NofileErr("exceed file size");
     iiblock(inode);
+    //first write the data
     disk_writeblock(inode.blocks[request.tar_block], request.content);
+    //then write inode 
     disk_writeblock(block, &inode);
   }
   else{
@@ -283,7 +286,7 @@ void Disk_Server::_delete(){
         throw NofileErr("deleting non empty directory");
     }
   }
-  //freeing block
+  //freeing block of the deleted
   for(size_t j = 0; j < fin.size; j++){
     int _s_, _b_ = 1;
     assert(free_list_access(fin.blocks[j], _s_, _b_) == 1);
@@ -293,9 +296,17 @@ void Disk_Server::_delete(){
   if(db_size == 1)
   {
     //shrink the dir
-    memcpy(din.blocks+i, din.blocks+i+1, din.size-i-1);
+    /*uint32_t tmp[FS_MAXFILEBLOCKS];*/
+    /*memcpy(tmp, din.blocks, FS_MAXFILEBLOCKS);*/
+    /*memcpy(din.blocks+i, tmp+i+1, din.size-i-1);*/
+    for(int j = i; j < din.size-1; j++){
+      din.blocks[j] = din.blocks[j+1];
+    }
     din.size--;
     disk_writeblock(dir_block, &din);
+    int _s_, _b_;
+    //free the block
+    free_list_access(din.blocks[i], _s_, _b_, true);
   } else{
     inv[fib].inode_block = 0;
     disk_writeblock(b, inv);//delete the entry in the inv
@@ -310,8 +321,8 @@ void Disk_Server::_create(){
   std::string name = *(request.path.end()-1);
   if(request.path.size() == 1)
     throw NofileErr("missing filename");
-  int file_inode_block = 0, size;
-  free_list_access(0, size, file_inode_block, true);
+  int file_inode_block = 0, _s_;
+  free_list_access(0, _s_, file_inode_block);
   if(file_inode_block == 0)
     throw NofileErr("no free space on disk!");
   lock_var ul;
@@ -332,7 +343,7 @@ void Disk_Server::_create(){
       throw NofileErr("already exists");
     entry = std::min(entry, i * 8 + _entry);
   }
-  int _s_, free_block = 0, dir_b_w;//free block for new dir entry
+  int free_block = 0, dir_b_w;//free block for new dir entry
   fs_direntry _inv[8];
   bool need_expand=false;
   if(entry == din.size * 8){

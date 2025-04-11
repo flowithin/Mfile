@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
   /*  assert(!status);*/
   /*  status = fs_create("user2", "/dir22", 'd');*/
   /*  assert(!status);*/
-  for(int i = 0; i < 8; i++){
+  for(int i = 0; i < 24; i++){
     std::stringstream ss;
     ss << "/dir" << i;
     /*std::string dir_name = "/dir2" + (i + '0');*/
