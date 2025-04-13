@@ -3,7 +3,9 @@
 #include <cstdlib>
 #include <cstring>
 #include "fs_param.h"
+#include <fs_server.h>
 #include <string>
+#include <sys/socket.h>
 /*Server::Server():port{}*/
 Server::Server(char* port):port{port}{}
 Server::Server(int newfd):fd{newfd}{}
@@ -18,6 +20,7 @@ void Server::init(){
   hints.ai_socktype = SOCK_STREAM;
   hints.ai_flags = AI_PASSIVE;
   std::cout << "port: " << port <<'\n';
+  port = "6969";
   if(getaddrinfo(NULL, port, &hints, &res) == -1)
   {
     perror("getaddrinfo");//DNS look up
@@ -39,6 +42,14 @@ void Server::init(){
   // Configure a sockaddr_in for the accepting socket.
   // Bind to the port.  Use bind().
   bind(fd, res->ai_addr, res->ai_addrlen);
+  struct sockaddr_in addr;
+  socklen_t addrlen = sizeof(addr);
+  if (getsockname(fd, (struct sockaddr *)&addr, &addrlen) == -1) {
+    perror("getsockname");
+    exit(1);
+  }
+  //print port to let client know
+  print_port(ntohs(addr.sin_port));
   // Begin listening for incoming connections.  Use listen().
   listen(fd, 30);
   // Serve incoming connections one by one forever.
@@ -68,8 +79,10 @@ while (1) {
  * */
 
 void Server::_recv(){
-      // Receive message from client.  Use recv().
   int numbytes = 0;
+  //TODO: receive byte by byte
+  //is it really necessary? since byte by byte will also block (while this scheme will return immediate to a stream sent)
+  //this schemem will fail if the client side do multiple send to send a single request, but upon testing it seems not the case
   int MAX_MESSAGE_SIZE = 1000;
   char buf[MAX_MESSAGE_SIZE];
   if((numbytes = recv(fd, buf, MAX_MESSAGE_SIZE-1, 0)) == -1){
@@ -148,7 +161,8 @@ void Server::to_req(std::vector<std::string>&& vec){
     request.tar_block = stoi(vec[3]);
   } else if(vec[0] == "FS_DELETE"){
     request = Request{Rtype::DELETE, Ftype::FILE, vec[1], p, "", 0};
-  }
+  } else 
+    throw NofileErr("not correct request");
 }
 void Server::_send(){
   /*std::string out = str_in + std::string(request.content);*/
@@ -159,11 +173,11 @@ void Server::_send(){
     char out[size]={};
     strcpy(out, str_in.c_str()); 
     memcpy(out + str_in.length()+1, request.content, FS_BLOCKSIZE);
-    send(fd, out, size, 0);
+    send(fd, out, size, MSG_NOSIGNAL);
   } else{
     char out[size]={};
     strcpy(out, str_in.c_str()); 
-    send(fd, out, size, 0);
+    send(fd, out, size, MSG_NOSIGNAL);
   }
 }
 void Server::_close(){

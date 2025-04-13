@@ -1,2 +1,13 @@
-*.o
+# Ignore everything
+*
+
+# But not these files
+!*.h
+!*.cpp
+!libfs*.o
+!Makefile
+!*.fs
+!autotag.sh
+!SUBMIT
+
 

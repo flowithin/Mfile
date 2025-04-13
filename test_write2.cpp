@@ -23,12 +23,6 @@ int main(int argc, char* argv[]) {
 
     fs_clientinit(server, server_port);
 
-    status = fs_create("user1", "/dir", 'd');
-    assert(!status);
-
-    status = fs_create("user1", "/dir/file.txt", 'f');
-    assert(!status);
-
     status = fs_writeblock("user1", "/dir/file.txt", 0, writedata);
     assert(!status);
     status = fs_writeblock("user1", "/dir/file.txt", 1, writedata);

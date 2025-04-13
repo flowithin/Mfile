@@ -26,8 +26,8 @@ int main(int argc, char* argv[]) {
     status = fs_create("user1", "/dir", 'd');
     assert(!status);
   /**/
-  /*  status = fs_create("user1", "/dir/file", 'f');*/
-  /*  assert(!status);*/
+    /*status = fs_create("user1", "/dir/file.txt", 'f');*/
+    /*assert(!status);*/
   /*  status = fs_create("user1", "/dir/dir2", 'd');*/
   /*  assert(!status);*/
   /*//NOTE:same file name in different dir*/
@@ -39,14 +39,14 @@ int main(int argc, char* argv[]) {
   /*  assert(!status);*/
   /*  status = fs_create("user2", "/dir22", 'd');*/
   /*  assert(!status);*/
-  for(int i = 0; i < 24; i++){
-    std::stringstream ss;
-    ss << "/dir" << i;
+  /*for(int i = 0; i < 24; i++){*/
+  /*  std::stringstream ss;*/
+  /*  ss << "/dir" << i;*/
     /*std::string dir_name = "/dir2" + (i + '0');*/
-    std::cout << ss.str() << "\n";
-    status = fs_create("user2", ss.str().c_str(), 'd');
-    assert(!status);
-  }
+  /*  std::cout << ss.str() << "\n";*/
+  /*  status = fs_create("user2", ss.str().c_str(), 'd');*/
+  /*  assert(!status);*/
+  /*}*/
 
 
 
@@ -66,6 +66,4 @@ int main(int argc, char* argv[]) {
     /*assert(!status);*/
     /**/
     /**/
-
-
 }

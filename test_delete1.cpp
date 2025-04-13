@@ -1,3 +1,5 @@
+#include <cstring>
+#include <sstream>
 #include <iostream>
 #include <cassert>
 #include <cstdlib>
@@ -9,6 +11,7 @@ int main(int argc, char* argv[]) {
     int server_port;
 
     char readdata[FS_BLOCKSIZE];
+    strcpy(readdata, "hellow");
     int status;
 
     if (argc != 3) {
@@ -19,8 +22,14 @@ int main(int argc, char* argv[]) {
     server_port = atoi(argv[2]);
 
     fs_clientinit(server, server_port);
-
-    status = fs_readblock("user1", "/dir/file.txt/", 0, readdata);
+  for(int i = 7; i < 8; i++){
+    std::stringstream ss;
+    ss << "/dir" << i;
+    /*std::string dir_name = "/dir2" + (i + '0');*/
+    status = fs_delete("user2", ss.str().c_str());
     assert(!status);
+ }
+
+
 
 }
