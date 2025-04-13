@@ -71,16 +71,16 @@ bool free_list_access(uint32_t idx, bool state){
 }
 
 /*
- * @brief get a free block from the free list
+ * @brief get a free block from the free list and make it occupied
  * @param free: free block
  * */
 bool get_free_block(uint32_t& free){
   boost::lock_guard<boost::mutex> _lock(Disk_Server::lock.mem_mt);
   for(size_t i = 0; i < Disk_Server::free_list.size(); i++){
-    if(!Disk_Server::free_list[i]){
+    if(Disk_Server::free_list[i] == FREE){
       //free block
       free = i;
-      Disk_Server::free_list[i] = 1;
+      Disk_Server::free_list[i] = OCCUPIED;
       return true;
     }
   }
@@ -112,12 +112,10 @@ void Disk_Server::access_inode(int block, fs_inode& in, char type){
 
 /*
  * @brief find a file in directory 
- * @param in: inode of the dir
+ * @param in: inode of the directory
  * @param entry: entry of the found entry (if not found, this is the first not occupied entry in current dir block)
- * @param inv: fs_direntry inv[8] used to type cast read value
- * @param num_entry: number of entry in the block of the dir
+ * @param inv: fs_direntry inv used to type cast read value
  * @return true if found false otw
- * @note that this function may need simplify
  * */
 
 bool dir_find(const fs_inode in, uint32_t& entry, std::string target, fs_direntry* inv){
@@ -129,9 +127,7 @@ bool dir_find(const fs_inode in, uint32_t& entry, std::string target, fs_direntr
       {
         //update free_block
         entry = std::min(i * 8 + j, entry);
-        continue;
-      }
-      if(inv[i * 8 + j].name == target){
+      } else if(inv[i * 8 + j].name == target){
         entry = i * 8 + j;
         return true;
       }
@@ -156,17 +152,16 @@ Acc Disk_Server::_access(lock_var curr_lk, int i, uint32_t& block, fs_inode& cur
     throw NofileErr("must have more than two pathname");
   const std::string next_dir = request.path[i + 1];//safe
   std::cout << "next_dir: " << next_dir << '\n';
-  //base case
-  //read inode
-  //end node lock decision
   access_inode(block, curr_node, 'd');
-  //traverse direntry array
   fs_direntry* inv_r = new fs_direntry[curr_node.size * 8]; 
   uint32_t entry=curr_node.size * 8;
+  //traverse direntry array
   bool found = dir_find(curr_node, entry, next_dir, inv_r);
   if(i == request.path.size() - 2) {
-    if(found && request.rtype == Rtype::CREATE)
+    if(request.rtype == Rtype::CREATE && found)
       throw NofileErr(next_dir + " already exist");
+    else if(request.rtype != Rtype::CREATE && !found)
+      throw NofileErr(next_dir + " not found!");
     return Acc{boost::move(curr_lk), entry, std::unique_ptr<fs_direntry[]>(inv_r)};
   }
   if(!found)
@@ -193,7 +188,6 @@ uint32_t iiblock(fs_inode& inode){
   if(!get_free_block(free_block))
     throw NofileErr("no free block");
   inode.blocks[inode.size++] = free_block;
-  free_list_access(free_block, OCCUPIED);
   return free_block;
 }
 
@@ -220,13 +214,14 @@ void Disk_Server::_read(){
 void Disk_Server::_write(){
   uint32_t block = 0;
   fs_inode din, fin;
-  Acc acc;
+  lock_var lv;
   {
-    lock_var lk = shared_lock(lock.find_lock("@ROOT"));
-    acc = _access(boost::move(lk), 0, block, din);
+    lock_var lk = request.path.size() <= 2 ? unique_lock(lock.find_lock("@ROOT")) : 
+                                             shared_lock(lock.find_lock("@ROOT"));
+    Acc acc = _access(boost::move(lk), 0, block, din);
+    block = acc.inv.get()[acc.entry].inode_block;
+    lv = unique_lock(lock.find_lock(*(request.path.end()-1)));
   }
-  block = acc.inv.get()[acc.entry].inode_block;
-  lock_var lv = unique_lock(lock.find_lock(*(request.path.end()-1)));
   access_inode(block, fin, 'f');
   if(request.tar_block > fin.size)
     throw NofileErr("exceed file size");
@@ -246,16 +241,15 @@ void Disk_Server::_write(){
 void Disk_Server::_delete(){
   uint32_t din_block = 0;
   lock_var ful;
+  lock_var dlv = request.path.size() <= 2 ? unique_lock(lock.find_lock("@ROOT")) :
+                                            shared_lock(lock.find_lock("@ROOT"));
   fs_inode din, fin;
-  if(request.path.size() == 1)
-    throw NofileErr("cannot delete root");
     //scope of shared lock
-  Acc acc = _access(shared_lock(lock.find_lock("@ROOT")), 0, din_block, din);
+  Acc acc = _access(boost::move(dlv), 0, din_block, din);
   uint32_t file_entry = acc.entry;//the entry #
   uint32_t file_block = acc.inv.get()[file_entry].inode_block;//the inode block of file
-  //acquire the lock on the file(or dir)
+  //acquire the UNIQUE lock on the file(or dir)
   ful = unique_lock(lock.find_lock(*(request.path.end()-1)));
-  //now writelock the file to delete;
   access_inode(file_block, fin, 'a');
   //check if directory is empty
   if(fin.type == 'd' && fin.size != 0)
@@ -263,14 +257,13 @@ void Disk_Server::_delete(){
   //freeing block of the deleted
   for(size_t j = 0; j < fin.size; j++){
     //TODO: free_list_access to multiple function
-    assert(free_list_access(fin.blocks[j], FREE));
+    free_list_access(fin.blocks[j], FREE);
   }
   int size = 0;
   for(int i = file_entry/8 * 8; i < file_entry/8 * 8 + 8; i++){
     if(acc.inv.get()[i].inode_block != 0)
       size++;
   }
-  std::cout << "file_entry: " << file_entry << '\n';
   if(size == 1)
   {
     //shrink the dir
@@ -291,18 +284,17 @@ void Disk_Server::_delete(){
 
 
 void Disk_Server::_create(){
-  //TODO: Shrink this chunk with delete
   std::string name = *(request.path.end()-1);
-  /*if(request.path.size() == 1)*/
-  /*  throw NofileErr("missing filename");*/
   uint32_t file_inode_block;
   if(!get_free_block(file_inode_block))
     throw NofileErr("no free space on disk!");
   fs_inode din;
   uint32_t dir_block = 0; 
-  Acc acc = _access(shared_lock(lock.find_lock("@ROOT")), 0, dir_block, din);
+  lock_var dlv = request.path.size() <= 2 ? unique_lock(lock.find_lock("@ROOT")) :
+                                            shared_lock(lock.find_lock("@ROOT"));
+  Acc acc = _access(boost::move(dlv), 0, dir_block, din);
   uint32_t free_block, dir_b_w;//free block for new dir entry
-  bool need_expand=false;
+  bool need_expand = false;
   fs_direntry _inv[8]={"",0};//the directory block of change
   if(acc.entry == din.size * 8){
     need_expand = true;
