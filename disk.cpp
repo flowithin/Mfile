@@ -1,31 +1,4 @@
 #include "disk.h"
-#include <boost/smart_ptr/make_shared_object.hpp>
-#include <boost/thread/lock_guard.hpp>
-#include <boost/thread/lock_types.hpp>
-#include <boost/thread/pthread/shared_mutex.hpp>
-#include <cassert>
-#include <cstdint>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include "fs_client.h"
-#include "fs_param.h"
-#include "fs_server.h"
-#include <iostream>
-#include <iterator>
-#include <iomanip>
-#include <algorithm>
-#include <memory>
-#include <numeric>
-#include <sstream>
-#include <string>
-#include <sys/types.h>
-#include <unistd.h>
-#include <utility>
-#include <vector>
-
-
-
 
 Lock::Lock(){}
 Lock Disk_Server::lock;
@@ -390,7 +363,6 @@ void Disk_Server::handle(){
   }
   _send();
   _close();
-  //NOTE: This may lead to Segmentation fualt
   delete this;//delete the handler when spawning thread
 }
 

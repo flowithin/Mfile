@@ -20,7 +20,7 @@ void Server::init(){
   hints.ai_socktype = SOCK_STREAM;
   hints.ai_flags = AI_PASSIVE;
   std::cout << "port: " << port <<'\n';
-  port = "6969";
+  /*port = "6969";*/
   if(getaddrinfo(NULL, port, &hints, &res) == -1)
   {
     perror("getaddrinfo");//DNS look up

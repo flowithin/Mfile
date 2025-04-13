@@ -4,13 +4,8 @@
 #include <boost/thread/pthread/mutex.hpp>
 #include <boost/thread/pthread/shared_mutex.hpp>
 #include "server.h"
-#include "fs_server.h"
-#include <cstdint>
 #include <memory>
-#include <string>
-#include <unistd.h>
 #include <unordered_map>
-#include <vector>
 #include <boost/thread.hpp>
 #define OCCUPIED true
 #define FREE false
