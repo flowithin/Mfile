@@ -145,7 +145,7 @@ Acc Disk_Server::_access(lock_var curr_lk, int i, uint32_t& block, fs_inode& cur
   else 
     nl = shared_lock(lock.find_lock(next_dir));
   /*std::cout << "next_dir: " << next_dir << '\n';*/
-  return _access(boost::move(nl), i+1, block = inv_r[entry/8].inode_block, curr_node);
+  return _access(boost::move(nl), i+1, block = inv_r[entry].inode_block, curr_node);
   // NOTE: will the fs always well formed?
   //assume well formed now
 }
@@ -287,13 +287,10 @@ void Disk_Server::_create(){
   }
   fs_inode fin = fs_inode{request.ftype == Ftype::FILE ? 'f' : 'd', "", 0};
   strcpy(fin.owner, request.usr.c_str());
-  //first should write the inode of the new file
-  disk_writeblock(file_inode_block, &fin);
-  //second write the block of dir where new entry is mapped
-  disk_writeblock(dir_b_w, _inv);
-  //third write dir inode, only if new block added
+  disk_writeblock(file_inode_block, &fin);//inode of the new file
+  disk_writeblock(dir_b_w, _inv);//block of dir where new entry is mapped
   if(need_expand)
-    disk_writeblock(dir_block, &din);
+    disk_writeblock(dir_block, &din);//dir inode, only if new block added
 }
 
 

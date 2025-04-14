@@ -37,10 +37,10 @@ int main(int argc, char* argv[]) {
     assert(!status);
     status = fs_create("user1", "/dir/dir2/dir4", 'd');
     assert(!status);
-  for(int i = 0; i < 10; i++){
+  for(int i = 1; i < 10; i++){
     std::stringstream ss;
     for(int j = 0; j < i; j++)
-      ss << "/dir" << i << j;
+      ss << "/dirr" << j;
     /*std::string dir_name = "/dir2" + (i + '0');*/
     std::cout << ss.str() << "\n";
     status = fs_create("user2", ss.str().c_str(), 'd');
