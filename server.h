@@ -18,6 +18,7 @@ struct Request{
   Ftype ftype;
   std::string usr;
   std::vector<std::string> path;
+  std::string path_str;
   /*std::string content;*/
   char content[FS_BLOCKSIZE];
   uint32_t tar_block;

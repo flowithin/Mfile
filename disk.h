@@ -32,6 +32,7 @@ struct Lock{
   boost::mutex mem_mt;
   std::unordered_map<std::string, boost::shared_mutex> file_locks;
   boost::shared_mutex& find_lock(std::string str);
+  void remove_lock(std::string str);
   friend void probe(int block);
 };
 
@@ -50,3 +51,4 @@ class Disk_Server : public Server{
   Disk_Server(int newfd);
   void handle();
 };
+

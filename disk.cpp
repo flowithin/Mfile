@@ -1,5 +1,16 @@
 #include "disk.h"
-
+#include <iostream>
+/*#define LOG_FL*/
+template <typename k, typename t>
+void print_lock_map(const std::unordered_map<k, t>& map){
+  std::cout << "********LOCK************: \n";
+  auto it = map.begin();
+  while(it != map.end()){
+    std::cout << it->first <<"\n";
+    it++;
+  }
+  std::cout << "********LOCK************: \n";
+}
 Lock::Lock(){}
 Lock Disk_Server::lock;
 /*
@@ -90,7 +101,6 @@ void Disk_Server::access_inode(int block, fs_inode& in, char type){
  * @param inv: fs_direntry inv used to type cast read value
  * @return true if found false otw
  * */
-
 bool dir_find(const fs_inode in, uint32_t& entry, std::string target, fs_direntry* inv){
   for(uint32_t i = 0; i < in.size; i++){
     disk_readblock(in.blocks[i], inv + i * 8);
@@ -124,7 +134,12 @@ Acc Disk_Server::_access(lock_var curr_lk, int i, uint32_t& block, fs_inode& cur
   if(request.path.size() < 2)
     throw NofileErr("must have more than two pathname");
   const std::string next_dir = request.path[i + 1];//safe
+  std::string next_path = "";
+  for(int j = 0; j <= i + 1; j++){
+    next_path += request.path[j] + '/';
+  }
   std::cout << "next_dir: " << next_dir << '\n';
+  std::cout << "next_path: " << next_path << '\n';
   access_inode(block, curr_node, 'd');
   fs_direntry* inv_r = new fs_direntry[curr_node.size * 8]; 
   uint32_t entry=curr_node.size * 8;
@@ -141,9 +156,9 @@ Acc Disk_Server::_access(lock_var curr_lk, int i, uint32_t& block, fs_inode& cur
     throw NofileErr(next_dir + " not found!");
   lock_var nl;
   if(i == request.path.size() - 3 && (request.rtype == Rtype::DELETE || request.rtype == Rtype::CREATE))
-    nl = unique_lock(lock.find_lock(next_dir));
+    nl = unique_lock(lock.find_lock(next_path));
   else 
-    nl = shared_lock(lock.find_lock(next_dir));
+    nl = shared_lock(lock.find_lock(next_path));
   /*std::cout << "next_dir: " << next_dir << '\n';*/
   return _access(boost::move(nl), i+1, block = inv_r[entry].inode_block, curr_node);
   // NOTE: will the fs always well formed?
@@ -167,15 +182,14 @@ uint32_t iiblock(fs_inode& inode){
 
 
 void Disk_Server::_read(){
-  uint32_t block = 0;
+  uint32_t block = 0, file_in;
   fs_inode din, fin;
-  Acc acc;
   {
-    lock_var lk = shared_lock(lock.find_lock("@ROOT"));
-    acc = _access(boost::move(lk), 0, block, din);
+    Acc acc = _access(boost::move(shared_lock(lock.find_lock("@ROOT/"))), 0, block, din);
+    lock_var lv = shared_lock(lock.find_lock(request.path_str));
+    file_in = acc.inv.get()[acc.entry].inode_block;
   }
-  lock_var lv = shared_lock(lock.find_lock(*(request.path.end()-1)));
-  access_inode(acc.inv.get()[acc.entry].inode_block, fin, 'f');
+  access_inode(file_in, fin, 'f');
   if(request.tar_block >= fin.size)
     throw NofileErr("block exceed boundary");
   disk_readblock(fin.blocks[request.tar_block], &request.content);
@@ -189,11 +203,10 @@ void Disk_Server::_write(){
   fs_inode din, fin;
   lock_var lv;
   {
-    lock_var lk = request.path.size() <= 2 ? unique_lock(lock.find_lock("@ROOT")) : 
-                                             shared_lock(lock.find_lock("@ROOT"));
+    lock_var lk = shared_lock(lock.find_lock("@ROOT/")); 
     Acc acc = _access(boost::move(lk), 0, block, din);
     block = acc.inv.get()[acc.entry].inode_block;
-    lv = unique_lock(lock.find_lock(*(request.path.end()-1)));
+    lv = unique_lock(lock.find_lock(request.path_str));
   }
   access_inode(block, fin, 'f');
   if(request.tar_block > fin.size)
@@ -212,19 +225,21 @@ void Disk_Server::_write(){
 
 
 void Disk_Server::_delete(){
+  print_lock_map(lock.file_locks);
   uint32_t din_block = 0;
   lock_var ful;
-  lock_var dlv = request.path.size() <= 2 ? unique_lock(lock.find_lock("@ROOT")) :
-                                            shared_lock(lock.find_lock("@ROOT"));
+  lock_var dlv = request.path.size() <= 2 ? unique_lock(lock.find_lock("@ROOT/")) :
+                                            shared_lock(lock.find_lock("@ROOT/"));
   fs_inode din, fin;
-    //scope of shared lock
+  //scope of shared lock
   Acc acc = _access(boost::move(dlv), 0, din_block, din);
   uint32_t file_entry = acc.entry;//the entry #
   uint32_t file_block = acc.inv.get()[file_entry].inode_block;//the inode block of file
   //acquire the UNIQUE lock on the file(or dir)
-  ful = unique_lock(lock.find_lock(*(request.path.end()-1)));
+  //this is to ensure no read/write is happening on the file
+  ful = unique_lock(lock.find_lock(request.path_str));
   access_inode(file_block, fin, 'a');
-  //check if directory is empty
+  //check if directory(if it is) is empty
   if(fin.type == 'd' && fin.size != 0)
     throw NofileErr("deleting non-empty dir");
   //freeing block of the deleted
@@ -246,29 +261,37 @@ void Disk_Server::_delete(){
     din.size--;
     //write the inode block
     disk_writeblock(din_block, &din);
-    //free the block
+    //free the block of the inventory
     free_list_access(din.blocks[file_entry/8], FREE);
   } else {
     acc.inv.get()[file_entry].inode_block = 0;
     disk_writeblock(din.blocks[file_entry/8], acc.inv.get() + file_entry/8*8);//delete the entry in the inv
   }
+  //freeing inode of the file(dir)
+  free_list_access(acc.inv.get()[file_entry].inode_block, FREE);
+  //clear its space in lock
+  std::cout << "path_str = " << request.path_str << '\n';
+  
 }
 
 
 
 void Disk_Server::_create(){
+  print_lock_map(lock.file_locks);
   std::string name = *(request.path.end()-1);
   uint32_t file_inode_block;
+  if(request.usr == "")
+    throw NofileErr("invalid user name");
   if(!get_free_block(file_inode_block))
     throw NofileErr("no free space on disk!");
   fs_inode din;
   uint32_t dir_block = 0; 
-  lock_var dlv = request.path.size() <= 2 ? unique_lock(lock.find_lock("@ROOT")) :
-                                            shared_lock(lock.find_lock("@ROOT"));
+  lock_var dlv = request.path.size() <= 2 ? unique_lock(lock.find_lock("@ROOT/")) :
+                                            shared_lock(lock.find_lock("@ROOT/"));
   Acc acc = _access(boost::move(dlv), 0, dir_block, din);
   uint32_t free_block, dir_b_w;//free block for new dir entry
   bool need_expand = false;
-  fs_direntry _inv[8]={"",0};//the directory block of change
+  fs_direntry _inv[8]={{"",0}};//the directory block of change
   if(acc.entry == din.size * 8){
     need_expand = true;
     dir_b_w = iiblock(din);
@@ -295,6 +318,14 @@ void Disk_Server::_create(){
 
 
 
+void print_fl(){
+  #ifdef LOG_FL
+  std::cout << "---------FREE LIST-----------------\n";
+  for(auto v : Disk_Server::free_list){
+    std::cout << v << " ";
+  }
+#endif
+}
 /*
  * @brief debug function
  * */
@@ -326,29 +357,31 @@ void Disk_Server::print_req(){
  * */
 void Disk_Server::handle(){
   try{
-  _recv();
-  to_req(parse_del(str_in, ' '));
-  print_req();
-  //handle the request
-  switch (request.rtype) {
-    case Rtype::READ:{
-      _read();
-      break;
+    _recv();
+    to_req(parse_del(str_in, ' '));
+    print_req();
+    print_fl();
+    //handle the request
+    switch (request.rtype) {
+      case Rtype::READ:{
+        _read();
+        break;
+      }
+      case Rtype::WRITE:{
+        _write();
+        break;
+      }
+      case Rtype::CREATE:{
+        _create();
+        break;
+      }
+      case Rtype::DELETE:{
+        _delete();
+        lock.remove_lock(request.path_str);
+        break;
+      }
     }
-    case Rtype::WRITE:{
-      _write();
-
-      break;
-    }
-    case Rtype::CREATE:{
-      _create();
-      break;
-    }
-    case Rtype::DELETE:{
-      _delete();
-      break;
-    }
-  }
+    print_fl();
   }
   //send the response
   /**/
@@ -369,14 +402,15 @@ void Disk_Server::handle(){
  *
  * */
 boost::shared_mutex& Lock::find_lock(std::string str){
-    //first aquiring memory lock
-    boost::lock_guard<boost::mutex> __lock(mem_mt);
-    //aquire shared mutex for read
-    /*boost::shared_lock<boost::shared_mutex> _lock(lock.sd_mt);*/
-    //check if the file exists
-    /*auto it = file_locks.find(str);*/
-    /*if(it != file_locks.end()){*/
-    /*  return it->second;*/
-    /*}*/
+  //first aquiring memory lock
+  boost::lock_guard<boost::mutex> __lock(mem_mt);
   return file_locks[str];
-  }
+}
+void Lock::remove_lock(std::string str){
+  //first aquiring memory lock
+  std::cout << "str = " << str << '\n';
+  boost::lock_guard<boost::mutex> __lock(mem_mt);
+  if(file_locks.find(str) != file_locks.end())
+    file_locks.erase(str);
+}
+

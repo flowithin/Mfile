@@ -22,13 +22,8 @@ int main(int argc, char* argv[]) {
     server_port = atoi(argv[2]);
 
     fs_clientinit(server, server_port);
-  for(int i = 7; i < 15; i++){
-    std::stringstream ss;
-    ss << "/dir" << i;
-    /*std::string dir_name = "/dir2" + (i + '0');*/
-    status = fs_delete("user2", ss.str().c_str());
+  fs_delete("user1", "/dir/file.txt");
     assert(!status);
- }
 
 
 
