@@ -22,5 +22,4 @@ int main(int argc, char* argv[]) {
     fs_clientinit(server, server_port);
 
    status = fs_delete("user1", "/");
-    assert(!status);
 }

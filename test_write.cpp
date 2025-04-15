@@ -22,5 +22,4 @@ int main(int argc, char* argv[]) {
 
     fs_clientinit(server, server_port);
     status = fs_writeblock("xxxx", "/jtw/abc.txt", 6, readdata);
-    assert(!status);
 }

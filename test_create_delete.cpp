@@ -47,14 +47,63 @@ int main(int argc, char* argv[]) {
     assert(!status);
 
     ss <<  "/file.txt";
-    status = fs_create("user2", ss.str().c_str() , 'd');
+    status = fs_create("user2", ss.str().c_str() , 'f');
     assert(!status);
   }
   for(int i = 0; i < 24; i++){
     std::stringstream ss;
-    ss << "/dir" << i + '1';
+    ss << "/dir" << i << "11";
     std::cout << ss.str() << "\n";
-    status = fs_create("user1", ss.str().c_str(), 'd');
+    status = fs_create("user2", ss.str().c_str(), 'd');
+    assert(!status);
+
+    ss <<  "/file.txt";
+    status = fs_create("user2", ss.str().c_str() , 'f');
+    assert(!status);
+
+  }
+
+  for(int i = 0; i < 24; i++){
+    std::stringstream ss;
+    ss << "/dir" << i  << "11";
+    std::stringstream ss2;
+    ss2  << ss.str() <<  "/file.txt";
+    std::cout << ss.str() << "\n";
+    status = fs_delete("user2", ss2.str().c_str());
+    assert(!status);
+    status = fs_create("user2", ss2.str().c_str(), 'f');
+    assert(!status);
+    status = fs_delete("user2", ss2.str().c_str());
+    assert(!status);
+    status = fs_delete("user2", ss.str().c_str());
+    assert(!status);
+  }
+
+  for(int i = 0; i < 24; i++){
+    std::stringstream ss;
+    ss << "/dir" << i << "11";
+    std::cout << ss.str() << "\n";
+    status = fs_create("user2", ss.str().c_str(), 'd');
+    assert(!status);
+
+    ss <<  "/file.txt";
+    status = fs_create("user2", ss.str().c_str() , 'f');
+    assert(!status);
+
+  }
+  for(int i = 0; i < 24; i++){
+    std::stringstream ss;
+    ss << "/dir" << i  << "11";
+    std::stringstream ss2;
+    ss2  << ss.str() <<  "/file.txt";
+    std::cout << ss.str() << "\n";
+    status = fs_delete("user2", ss2.str().c_str());
+    assert(!status);
+    status = fs_create("user2", ss2.str().c_str(), 'f');
+    assert(!status);
+    status = fs_delete("user2", ss2.str().c_str());
+    assert(!status);
+    status = fs_delete("user2", ss.str().c_str());
     assert(!status);
   }
 

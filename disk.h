@@ -16,6 +16,8 @@ using lock_var = std::variant<shared_lock, unique_lock>;
 /*  ReadLock(boost::shared_mutex& sd_mt)*/
 /*        : mem_lock(mem_mt), shared_lock(sd_mt) {}*/
 /*}*/
+
+bool get_free_block(uint32_t& free, bool toggle);
 struct NofileErr{
   std::string msg;
   NofileErr(std::string str):msg{str}{}

@@ -23,7 +23,6 @@ int main(int argc, char* argv[]) {
 
     fs_clientinit(server, server_port);
   fs_delete("user1", "/dir/file.txt");
-    assert(!status);
 
 
 

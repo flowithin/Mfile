@@ -1,11 +1,11 @@
+
+
 #include "disk.h"
-#include <boost/thread/exceptions.hpp>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include "fs_param.h"
-#include "fs_server.h"
-#include <iostream>
+#include <fs_server.h>
 #include <string>
 #include <sys/socket.h>
 /*Server::Server():port{}*/
@@ -87,24 +87,21 @@ void Server::_recv(){
   //this schemem will fail if the client side do multiple send to send a single request, but upon testing it seems not the case
   int MAX_MESSAGE_SIZE = 1000;
   char buf[MAX_MESSAGE_SIZE];
-  //NOTE: Not sure if I should deal with -1
-  /*if((numbytes = recv(fd, buf, MAX_MESSAGE_SIZE-1, 0)) == -1)*/
-  /*{*/
-  /*      perror("recv");*/
-  /*      exit(1);*/
-  /*    } else if (numbytes == 0)*/
-
-  if((numbytes = recv(fd, buf, MAX_MESSAGE_SIZE-1, 0)) == 0)
+  if((numbytes = recv(fd, buf, MAX_MESSAGE_SIZE-1, 0)) == -1){
+        perror("recv");
+        exit(1);
+      } else if (numbytes == 0)
         {
           //closed from client side
           close(fd);
           return;
         }
       buf[numbytes] = '\0';
-      // automatically detect the portion up to <NULL>
+      // Print message from client.
       str_in = buf;
+      /*std::cout << "str_in.len = " << str_in.length() << '\n';*/
       if(numbytes > str_in.length()){
-    //FS_WRITEBLOCK
+    //write
       memcpy(request.content, buf+str_in.length()+1, FS_BLOCKSIZE);
   }
   buf[str_in.length()] = '#'; 
@@ -117,20 +114,12 @@ void Server::_recv(){
  * */
 std::vector<std::string> Server::parse_del(std::string& str, char del){
   std::stringstream ss(str);
-  std::vector<std::string> path = {};
+  std::vector<std::string> path;
   int i=0;
-  char file[1000];
-  bool flag=false;
-  while(ss.getline(file, 1000, del)){
+  char file[FS_MAXFILENAME];
+  while(ss.getline(file, FS_MAXFILENAME, del)){
     std::string file_str(file);
-    if(file_str == "")
-    {
-      //only one root allowed
-      if(flag)
-        throw NofileErr("mal formed pathname");
-      file_str = "@ROOT"; 
-      flag = true;
-    }
+    file_str += file_str == "" ? "@ROOT" : "";
     int n = file_str.find(' ');
     /*std::cout << "n= " << n << '\n';*/
     if (n != -1)
@@ -138,25 +127,17 @@ std::vector<std::string> Server::parse_del(std::string& str, char del){
     path.push_back(file_str);
     /*std::cout << path[i++] << '\n';*/
   }
-  std::cout << "parse_del(" << str << ")\n";
   return path;
 }
 /*
  * @brief fill in the request structure
  * */
 void Server::to_req(std::vector<std::string>&& vec){
-  if(vec.size() < 3)
-    throw NofileErr("mal formed request");
   if(vec[1].size() > FS_MAXUSERNAME)
     throw NofileErr("user name too long");
-  if(vec[1] == "@ROOT")
-    throw NofileErr("user name can not be empty");
   if(vec[2].size() > FS_MAXPATHNAME)
     throw NofileErr("path name too long");
   std::vector<std::string> p = parse_del(vec[2], '/');
-  //path name too short
-  if(p.size() < 2)
-    throw NofileErr("must have more than two pathname");
   for(auto e : p){
     if(e.size() > FS_MAXFILENAME)
       throw NofileErr("file name too long");
@@ -165,24 +146,14 @@ void Server::to_req(std::vector<std::string>&& vec){
     throw NofileErr("mal formed path");
   if(vec[0] == "FS_CREATE"){
     // TODO: check if the size and format are correct
-    // NOTE: some field don't need initializing
-    uint32_t _f_;
-    if(!get_free_block(_f_, false))
-      throw NofileErr("no free space");
-    if(vec.size() > 4)
-      throw NofileErr("mal formed request");
     Ftype ft;
     if(vec[3] == "d")
       ft = Ftype::DIR;
     else ft = Ftype::FILE;
-    request = Request{.rtype = Rtype::CREATE, .ftype = ft, .usr = vec[1], .path = p, .content = "", .tar_block = 0 };
+    request = Request{Rtype::CREATE, ft, vec[1], p, "", 0 };
   } else if(vec[0] == "FS_READBLOCK"){
-    if(vec.size() > 4)
-      throw NofileErr("mal formed request");
-    request = Request{.rtype = Rtype::READ, .ftype = Ftype::FILE, .usr = vec[1], .path = p, .content = "", .tar_block =  stoi(vec[3])};
+    request = Request{Rtype::READ, Ftype::FILE, vec[1], p, "", stoi(vec[3])};
   } else if(vec[0] == "FS_WRITEBLOCK"){
-    if(vec.size() > 4)
-      throw NofileErr("mal formed request");
     if(vec[1] == "")
       throw NofileErr("user name can't be empty");
     request.rtype = Rtype::WRITE;
@@ -190,21 +161,11 @@ void Server::to_req(std::vector<std::string>&& vec){
     request.usr = vec[1];
     request.path = p;
     request.tar_block = stoi(vec[3]);
-    if(request.tar_block >= FS_MAXFILEBLOCKS)
-      throw NofileErr("exceed file size");
   } else if(vec[0] == "FS_DELETE"){
-    if(vec.size() > 3)
-      throw NofileErr("mal formed request");
-    request = Request{.rtype = Rtype::DELETE, .ftype = Ftype::FILE, .usr = vec[1], .path = p, .content = "", .tar_block =  0};
+    request = Request{Rtype::DELETE, Ftype::FILE, vec[1], p, "", 0};
   } else 
     throw NofileErr("not correct request");
-  request.path_str = "@ROOT" + vec[2] + '/';
-  std::cout << "pathstr " << request.path_str << '\n';
 }
-
-
-
-
 void Server::_send(){
   /*std::string out = str_in + std::string(request.content);*/
   uint32_t size = str_in.length() + 1;

@@ -22,6 +22,7 @@ int main(int argc, char* argv[]) {
     server = argv[1];
     server_port = atoi(argv[2]);
     fs_clientinit(server, server_port);
+    status = fs_create("user1", "/dir10", 'd');
     status = fs_create("user2", "/dir10", 'd');
 
 
