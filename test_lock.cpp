@@ -22,10 +22,14 @@ int main(int argc, char* argv[]) {
 
     fs_clientinit(server, server_port);
 
-    status = fs_delete("user1", "/dir/dir2/dir3");
-    assert(!status);
 
+    status = fs_create("user1", "/dir", 'd');
+    status = fs_create("user1", "/dir/dir2", 'd');
+    status = fs_create("user1", "/dir/dir2/dir3", 'd');
  
+    status = fs_delete("user1", "/dir");
+
+    assert(!status);
     status = fs_writeblock("user1", "/dir/dir2/dir3", 0, writedata);
     assert(!status);
 

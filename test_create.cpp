@@ -1,4 +1,5 @@
 #include <cstring>
+#include <fs_param.h>
 #include <iostream>
 #include <cassert>
 #include <cstdlib>
@@ -23,58 +24,25 @@ int main(int argc, char* argv[]) {
     server_port = atoi(argv[2]);
 
     fs_clientinit(server, server_port);
+  //filename root 
+    status = fs_create("user1", "/", 'd');
+  //filename not valid
+    status = fs_create("user1", "/dir/", 'd');
+  //not found
+    status = fs_create("user1", "/dir/file", 'd');
+  //username incorrect
+    status = fs_create("", "/dir", 'd');
+  //correct 
     status = fs_create("user1", "/dir", 'd');
-    assert(!status);
-  /**/
-    /*status = fs_create("user1", "/dir/file.txt", 'f');*/
-    /*assert(!status);*/
-  /*  status = fs_create("user1", "/dir/dir2", 'd');*/
-  /*  assert(!status);*/
-  /*//NOTE:same file name in different dir*/
-  /*  status = fs_create("user1", "/dir/dir2/file", 'f');*/
-  /*  assert(!status);*/
-  /*  status = fs_create("user1", "/dir/dir2/dir3", 'd');*/
-  /*  assert(!status);*/
-  /*  status = fs_create("user1", "/dir/dir2/dir3/file2", 'f');*/
-  /*  assert(!status);*/
-  /*  status = fs_create("user2", "/dir22", 'd');*/
-  /*  assert(!status);*/
-  for(int i = 0; i < 24; i++){
+    status = fs_create("user1", "/dir/file", 'd');
+  //incorrect username
+    status = fs_create("user2", "/dir/file", 'd');
+  //excceed file max block number
+  for(int i=0; i < FS_MAXFILEBLOCKS * 8; i++){
     std::stringstream ss;
     ss << "/dir" << i;
-    std::cout << ss.str() << "\n";
-    status = fs_create("user2", ss.str().c_str(), 'd');
-    assert(!status);
-
-    ss <<  "/file.txt";
-    status = fs_create("user2", ss.str().c_str() , 'd');
-    assert(!status);
-  }
-  for(int i = 0; i < 24; i++){
-    std::stringstream ss;
-    ss << "/dir" << i + '1';
-    std::cout << ss.str() << "\n";
-    status = fs_create("user1", ss.str().c_str(), 'd');
-    assert(!status);
+    status = fs_create("user2", ss.str().c_str(), 'f');
   }
 
 
-
-
-
-    /**/
-    /*status = fs_create("user2", "/dir22/file22", 'f');*/
-    /*assert(!status);*/
-    /*status = fs_create("user2", "/dir22/dir33", 'd');*/
-    /*assert(!status);*/
-    /*status = fs_create("user2", "/dir22/dir33/file", 'f');*/
-    /*assert(!status);*/
-    /*status = fs_create("user2", "/dir22/dir33/dir3", 'd');*/
-    /*assert(!status);*/
-    /*status = fs_create("user2", "/dir22/dir33/dir3/file2", 'f');*/
-    /*assert(!status);*/
-    /*status = fs_create("user2", "/file", 'f');*/
-    /*assert(!status);*/
-    /**/
-    /**/
 }

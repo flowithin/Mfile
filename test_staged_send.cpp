@@ -4,6 +4,7 @@
 #include <sys/types.h>
 #include <netdb.h>
 #include <unistd.h>
+#include <sstream>
 
 static const size_t MAX_MESSAGE_SIZE = 256;
 
@@ -11,9 +12,13 @@ int main(int argc, const char **argv) {
     // Parse command line arguments
     const char* hostname = argv[1];
     const char* port = argv[2];
-    std::string message("FS_CREATE ");
-    std::string message1("user1 ");
-    std::string message2("/dir d");
+    std::string message("FS_CREATEx ");
+  std::stringstream large_msg;
+  for(int i=0; i < 1001;i++){
+    large_msg << i;
+  }
+    /*std::string message1("user1 ");*/
+    /*std::string message2("/dir d");*/
 
     std::cout << "Sending " << message << " to " << hostname << ":"
               << port << std::endl;
@@ -35,9 +40,9 @@ int main(int argc, const char **argv) {
   connect(fd, res->ai_addr, res->ai_addrlen);
 
     // Send message to remote server.  Use send().
-  send(fd, message.c_str(), message.length(), 0);
-  send(fd, message1.c_str(), message1.length(), 0);
-  send(fd, message2.c_str(), message2.length(), 0);
+  send(fd, large_msg.str().c_str(), large_msg.str().length(), 0);
+  /*send(fd, message1.c_str(), message1.length(), 0);*/
+  /*send(fd, message2.c_str(), message2.length(), 0);*/
     // Close connection.  Use close().
   close(fd);
     return(0);

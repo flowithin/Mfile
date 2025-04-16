@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <vector>
 /*#pragma */
+
 enum class Rtype {READ, WRITE, CREATE, DELETE};
 enum class Ftype {FILE, DIR};
 struct Request{

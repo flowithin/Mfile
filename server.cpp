@@ -8,9 +8,12 @@
 #include <iostream>
 #include <string>
 #include <sys/socket.h>
+#define LOG
 /*Server::Server():port{}*/
 Server::Server(char* port):port{port}{}
 Server::Server(int newfd):fd{newfd}{}
+
+
 /*
  * @brief initialize socket structures and start listening
  * */
@@ -21,7 +24,7 @@ void Server::init(){
   hints.ai_family = AF_UNSPEC;
   hints.ai_socktype = SOCK_STREAM;
   hints.ai_flags = AI_PASSIVE;
-  std::cout << "port: " << port <<'\n';
+  /*myPrint("port: ",port ); */
   /*port = "6969";*/
   if(getaddrinfo(NULL, port, &hints, &res) == -1)
   {
@@ -34,7 +37,6 @@ void Server::init(){
     perror("socket");
     exit(1);
   }
-  std::cout << "fd: " << fd << '\n';
   // Set the "reuse port" socket option.  Use setsockopt().
   int yes = 1;
   if(setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes)) == -1) {
@@ -94,7 +96,7 @@ void Server::_recv(){
   /*      exit(1);*/
   /*    } else if (numbytes == 0)*/
 
-  if((numbytes = recv(fd, buf, MAX_MESSAGE_SIZE-1, 0)) == 0)
+  if((numbytes = recv(fd, buf, MAX_MESSAGE_SIZE-1, MSG_WAITALL)) == 0)
         {
           //closed from client side
           close(fd);
@@ -108,7 +110,9 @@ void Server::_recv(){
       memcpy(request.content, buf+str_in.length()+1, FS_BLOCKSIZE);
   }
   buf[str_in.length()] = '#'; 
+  #ifdef LOG
       printf("server received %s\n size: %d\n", buf, numbytes);
+  #endif
       // Close connection.  Use close().
 }
 
@@ -138,7 +142,7 @@ std::vector<std::string> Server::parse_del(std::string& str, char del){
     path.push_back(file_str);
     /*std::cout << path[i++] << '\n';*/
   }
-  std::cout << "parse_del(" << str << ")\n";
+  /*std::cout << "parse_del(" << str << ")\n";*/
   return path;
 }
 /*
@@ -199,7 +203,7 @@ void Server::to_req(std::vector<std::string>&& vec){
   request.path_str = "@ROOT" + vec[2] + '/';
   if(request.tar_block >= FS_MAXFILEBLOCKS)
     throw NofileErr("exceed file size");
-  std::cout << "pathstr " << request.path_str << '\n';
+  /*myPrint("pathstr ", request.path_str );*/
 }
 
 
