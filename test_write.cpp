@@ -23,19 +23,25 @@ int main(int argc, char* argv[]) {
     fs_clientinit(server, server_port);
 
     status = fs_create("user1", "/dir", 'd');
+  assert(!status);
     status = fs_create("user1", "/dir/file.txt", 'd');
+  assert(!status);
   //read the 'd' file bound to fail
     status = fs_writeblock("user1", "/dir/file.txt", 0, writedata);
     status = fs_readblock("user1", "/dir/file.txt", 0, readdata);
     status = fs_delete("user1", "/dir/file.txt");
+  assert(!status);
     status = fs_create("user1", "/dir/file.txt", 'f');
+  assert(!status);
   //out of bound bound to fail
     status = fs_readblock("user1", "/dir/file.txt", 0, readdata);
   //user name wrotn
     status = fs_readblock("user2", "/dir/file.txt", 0, readdata);
     status = fs_writeblock("user1", "/dir/file.txt", 0, writedata);
+  assert(!status);
   //this will succed
     status = fs_readblock("user1", "/dir/file.txt", 0, readdata);
+  assert(!status);
   //out of MAX_BLOCK should fail w/o reading anything
     status = fs_readblock("user1", "/dir/file.txt", 124, readdata);
 

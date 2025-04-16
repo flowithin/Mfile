@@ -491,7 +491,7 @@ boost::shared_mutex& Lock::find_lock(std::string str){
   //first aquiring memory lock
   boost::lock_guard<boost::mutex> __lock(mem_mt);
   std::cout << "access file_lock\n";
-  sleep(1000);
+  /*sleep(1000);*/
   return file_locks[str];
 }
 void Lock::remove_lock(std::string str){

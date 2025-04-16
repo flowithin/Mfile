@@ -29,7 +29,7 @@ all: fs $(TESTS)
 # environment variables to include your Boost installation directory.
 fs: ${FS_OBJS} ${LIBFSSERVER}
 	./autotag.sh 
-	${CC} -o $@ $^ -l${BOOST_THREAD} -lboost_system -pthread -ldl
+	${CC} -o $@ $^ -l${BOOST_THREAD} -lboost_system -lboost_regex -pthread -ldl
 
 %: %.cpp ${LIBVMAPP}
 	${CC} -o $@ $^ ${LIBFSCLIENT} -ldl 
