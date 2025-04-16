@@ -40,8 +40,8 @@ int main(int argc, const char **argv) {
   connect(fd, res->ai_addr, res->ai_addrlen);
 
     // Send message to remote server.  Use send().
+  close(fd);
   send(fd, large_msg.str().c_str(), large_msg.str().length(), 0);
-  /*send(fd, message1.c_str(), message1.length(), 0);*/
   /*send(fd, message2.c_str(), message2.length(), 0);*/
     // Close connection.  Use close().
   close(fd);

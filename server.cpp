@@ -96,9 +96,10 @@ void Server::_recv(){
   /*      exit(1);*/
   /*    } else if (numbytes == 0)*/
 
-  if((numbytes = recv(fd, buf, MAX_MESSAGE_SIZE-1, MSG_WAITALL)) == 0)
+  if((numbytes = recv(fd, buf, MAX_MESSAGE_SIZE-1, 0)) == 0)
         {
           //closed from client side
+          std::cout << "numbytes == 0\n";
           close(fd);
           return;
         }
@@ -110,9 +111,7 @@ void Server::_recv(){
       memcpy(request.content, buf+str_in.length()+1, FS_BLOCKSIZE);
   }
   buf[str_in.length()] = '#'; 
-  #ifdef LOG
       printf("server received %s\n size: %d\n", buf, numbytes);
-  #endif
       // Close connection.  Use close().
 }
 

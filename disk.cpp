@@ -291,7 +291,7 @@ myPrint("_delete\n","");
   fs_inode din, fin;
   Acc acc = _access(boost::move(dlv), 0, din_block, din);
   myPrint("_access returned\n","");
-  myPrint("size: ",request.path.size() ); 
+  myPrint("size: ",request.path.size()); 
 
   //debug code
   #ifdef LOCK_DETECT
@@ -490,6 +490,8 @@ void Disk_Server::handle(){
 boost::shared_mutex& Lock::find_lock(std::string str){
   //first aquiring memory lock
   boost::lock_guard<boost::mutex> __lock(mem_mt);
+  std::cout << "access file_lock\n";
+  sleep(1000);
   return file_locks[str];
 }
 void Lock::remove_lock(std::string str){

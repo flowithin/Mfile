@@ -34,6 +34,7 @@ int main(int argc, char* argv[]) {
     status = fs_readblock("userdkfjdkfjdkfjkdfjwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww1", "/dir/file", 0, readdata);
 
     status = fs_delete("u 1", "/dir/file");
+    status = fs_delete("u /dir/file", "/dir/file");
     status = fs_delete("u1", "");
 
     status = fs_delete("", "/dir");
