@@ -2,7 +2,7 @@
 #include <cassert>
 #include <iostream>
 #include <unistd.h>
-/*#define LOG_FL*/
+#define LOG_FL
 template <typename k, typename t>
 void print_lock_map(const std::unordered_map<k, t>& map){
   std::cout << "********LOCK************: \n";
@@ -130,8 +130,6 @@ bool dir_find(const fs_inode in, uint32_t& entry, std::string target, fs_direntr
  * @param block is the block of the next inode
  *
  * */
-
-
 Acc Disk_Server::_access(lock_var curr_lk, int i, uint32_t& block, fs_inode& curr_node){
   //base case
   std::cout << "access begin\n";
@@ -256,7 +254,7 @@ void Disk_Server::_delete(){
   //freeing block of the deleted
   for(size_t j = 0; j < fin.size; j++){
     //TODO: free_list_access to multiple function
-    free_list_access(fin.blocks[j], FREE);
+    assert(free_list_access(fin.blocks[j], FREE));
   }
   int size = 0;
   for(int i = file_entry/8 * 8; i < file_entry/8 * 8 + 8; i++){
@@ -264,18 +262,19 @@ void Disk_Server::_delete(){
       size++;
   }
   //freeing inode of the file(dir)
-  free_list_access(acc.inv.get()[file_entry].inode_block, FREE);
+  assert(free_list_access(acc.inv.get()[file_entry].inode_block, FREE));
   if(size == 1)
   {
     //shrink the dir
+    //free the block of the inventory
+    assert(free_list_access(din.blocks[file_entry/8], FREE));
     for(int j = file_entry/8; j < din.size-1; j++){
       din.blocks[j] = din.blocks[j+1];
     }
     din.size--;
-    //write the inode block
+    //write the inode block for the dir
+    //we don't need to clear the content
     disk_writeblock(din_block, &din);
-    //free the block of the inventory
-    free_list_access(din.blocks[file_entry/8], FREE);
   } else {
     acc.inv.get()[file_entry].inode_block = 0;
     disk_writeblock(din.blocks[file_entry/8], acc.inv.get() + file_entry/8*8);//delete the entry in the inv
@@ -303,7 +302,7 @@ void Disk_Server::_create(){
   Acc acc = _access(boost::move(dlv), 0, dir_block, din);
   uint32_t free_block, dir_b_w;//free block for new dir entry
   bool need_expand = false;
-  fs_direntry _inv[8]={{"",0}};//the directory block of change
+  fs_direntry _inv[8]={{"",0}};//the directory block of change, intialized to all "",0
   if(acc.entry == din.size * 8){
     need_expand = true;
     dir_b_w = iiblock(din);
@@ -322,8 +321,8 @@ void Disk_Server::_create(){
   }
   fs_inode fin = fs_inode{request.ftype == Ftype::FILE ? 'f' : 'd', "", 0};
   strcpy(fin.owner, request.usr.c_str());
-  disk_writeblock(file_inode_block, &fin);//inode of the new file
-  disk_writeblock(dir_b_w, _inv);//block of dir where new entry is mapped
+  disk_writeblock(file_inode_block, &fin);//inode of the new file(or dir)
+  disk_writeblock(dir_b_w, _inv);//block of inv where new entry is mapped
   if(need_expand)
     disk_writeblock(dir_block, &din);//dir inode, only if new block added
 }
@@ -333,8 +332,8 @@ void Disk_Server::_create(){
 void print_fl(){
   #ifdef LOG_FL
   std::cout << "---------FREE LIST-----------------\n";
-  for(auto v : Disk_Server::free_list){
-    std::cout << v << " ";
+  for(int i=0; i < 106;i++){
+    std::cout << Disk_Server::free_list[i] << " ";
   }
 #endif
 }

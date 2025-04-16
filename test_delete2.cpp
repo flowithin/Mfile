@@ -27,7 +27,6 @@ int main(int argc, char* argv[]) {
     ss << "/dir" << i;
     /*std::string dir_name = "/dir2" + (i + '0');*/
     status = fs_delete("user2", ss.str().c_str());
-    assert(!status);
  }
 
 

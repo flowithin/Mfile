@@ -17,6 +17,7 @@ using lock_var = std::variant<shared_lock, unique_lock>;
 /*        : mem_lock(mem_mt), shared_lock(sd_mt) {}*/
 /*}*/
 
+void print_fl();
 bool get_free_block(uint32_t& free, bool toggle);
 struct NofileErr{
   std::string msg;

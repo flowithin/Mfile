@@ -190,8 +190,6 @@ void Server::to_req(std::vector<std::string>&& vec){
     request.usr = vec[1];
     request.path = p;
     request.tar_block = stoi(vec[3]);
-    if(request.tar_block >= FS_MAXFILEBLOCKS)
-      throw NofileErr("exceed file size");
   } else if(vec[0] == "FS_DELETE"){
     if(vec.size() > 3)
       throw NofileErr("mal formed request");
@@ -199,6 +197,8 @@ void Server::to_req(std::vector<std::string>&& vec){
   } else 
     throw NofileErr("not correct request");
   request.path_str = "@ROOT" + vec[2] + '/';
+  if(request.tar_block >= FS_MAXFILEBLOCKS)
+    throw NofileErr("exceed file size");
   std::cout << "pathstr " << request.path_str << '\n';
 }
 
