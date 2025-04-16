@@ -88,31 +88,36 @@ void Server::_recv(){
   //is it really necessary? since byte by byte will also block (while this scheme will return immediate to a stream sent)
   //this schemem will fail if the client side do multiple send to send a single request, but upon testing it seems not the case
   int MAX_MESSAGE_SIZE = 1000;
+  int idx = 0;
   char buf[MAX_MESSAGE_SIZE];
+  char ch;
   //NOTE: Not sure if I should deal with -1
   /*if((numbytes = recv(fd, buf, MAX_MESSAGE_SIZE-1, 0)) == -1)*/
   /*{*/
   /*      perror("recv");*/
   /*      exit(1);*/
   /*    } else if (numbytes == 0)*/
+  do {
+    numbytes = recv(fd, &ch, 1, 0);
+    if(numbytes <= 0)
+      throw NofileErr("connection break");
+    buf[idx++] = ch;
+  }while (ch!='\0')
+  // automatically detect the portion up to <NULL>
+  str_in = buf;
+  std::string req = str_in.substr(0, str_in.find(' '));
+  if(req == "FS_WRITEBLOCK"){
+    if((numbytes = recv(fd, buf, FS_BLOCKSIZE, 0)) <= 0)
+      throw NofileErr("connection break");
+  }
 
-  if((numbytes = recv(fd, buf, MAX_MESSAGE_SIZE-1, 0)) == 0)
-        {
-          //closed from client side
-          std::cout << "numbytes == 0\n";
-          close(fd);
-          return;
-        }
-      buf[numbytes] = '\0';
-      // automatically detect the portion up to <NULL>
-      str_in = buf;
-      if(numbytes > str_in.length()){
+  if(numbytes > str_in.length()){
     //FS_WRITEBLOCK
-      memcpy(request.content, buf+str_in.length()+1, FS_BLOCKSIZE);
+    memcpy(request.content, buf+str_in.length()+1, FS_BLOCKSIZE);
   }
   buf[str_in.length()] = '#'; 
-      printf("server received %s\n size: %d\n", buf, numbytes);
-      // Close connection.  Use close().
+  printf("server received %s\n size: %d\n", buf, numbytes);
+  // Close connection.  Use close().
 }
 
 /*
