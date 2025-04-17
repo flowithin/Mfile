@@ -113,8 +113,8 @@ void Server::_recv(){
     //FS_WRITEBLOCK
     memcpy(request.content, buf+idx, FS_BLOCKSIZE);
   }
-  buf[str_in.length()] = '#'; //for debug purpose
   #ifdef LOG
+  buf[str_in.length()] = '#'; //for debug purpose
   printf("\nserver received %s\n size: %d\n", buf, idx);
   #endif
   // Close connection.  Use close().
