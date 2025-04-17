@@ -23,7 +23,7 @@ int main(int argc, const char **argv) {
     std::string message1("user1 ");
     std::string message2("/dir d");
   std::string message_create("FS_CREATE user1 /dir x"); 
-  std::string message_write("FS_WRITEBLOCK user1 /dir -1"); 
+  std::string message_write("FS_WRITEBLOCK user1 /dir -1A"); 
     /*std::cout << "Sending " << large_msg.str() << " to " << hostname << ":"*/
               /*<< port << std::endl;*/
 

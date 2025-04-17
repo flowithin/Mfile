@@ -112,7 +112,9 @@ void Server::_recv(){
     memcpy(request.content, buf+idx, FS_BLOCKSIZE);
   }
   buf[str_in.length()] = '#'; //for debug purpose
+  #ifdef LOG
   printf("\nserver received %s\n size: %d\n", buf, idx);
+  #endif
   // Close connection.  Use close().
 }
 
@@ -191,7 +193,7 @@ void Server::to_req(std::vector<std::string>&& vec){
       throw NofileErr("invalid block number");
     uint32_t block=0;
     try{
-      block = stoi(vec[3]);
+      block = std::stoul(vec[3]);
     }
     catch(...){throw NofileErr("invalid block number");}
     if(vec[3][0] == '0' && block != 0)
