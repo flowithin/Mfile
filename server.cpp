@@ -100,7 +100,9 @@ void Server::_recv(){
     if(numbytes <= 0 || idx >= MAX_MESSAGE_SIZE)
       throw NofileErr("invalid request");
     buf[idx++] = ch;
+    #ifdef LOG
     std::cout << ch;
+#endif
   }while (ch!='\0');
   // automatically detect the portion up to <NULL>
   str_in = buf;
@@ -144,9 +146,13 @@ std::vector<std::string> Server::parse_del(std::string& str, char del){
     /*if (n != -1)*/
     /*  throw NofileErr("space shouldn't appear!!\n");*/
     path.push_back(file_str);
+    #ifdef LOG
     std::cout << path[i++] << '\n';
+    #endif
   }
+  #ifdef LOG
   std::cout << "parse_del(" << str << ") with " << del << " \n";
+  #endif
   return path;
 }
 /*
