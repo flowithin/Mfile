@@ -5,4 +5,3 @@ server.cpp
 server.h
 server_run.cpp
 *.fs
-!test_spec.cpp
