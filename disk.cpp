@@ -5,7 +5,7 @@
 #include <sstream>
 #include <unistd.h>
 /*#define LOG_FL*/
-/*#define LOG*/
+#define LOG
 /*#define LOCK_DETECT*/
 template <typename T, typename...>
 void myPrint(std::string words, const T& t){
@@ -69,6 +69,9 @@ bool free_list_access(uint32_t idx, bool state){
   return is_free;
 }
 
+
+
+
 /*
  * @brief get a free block from the free list and make it occupied
  * @param free: free block
@@ -86,14 +89,6 @@ bool get_free_block(uint32_t& free, bool toggle = true){
   }
   return false;
 }
-/*
- * @brief recursively access the path
- * @requirement size of the vector > 2
- * @return a lock to final entry
- * @return also the block will be inode block number of the last entry on the path
- * @note hand in hand lock might fail due to misunderstanding of compiler
- * */
-
 /*
  *
  * @brief access inode with checks, in will contain the read info
@@ -136,18 +131,17 @@ bool dir_find(const fs_inode in, uint32_t& entry, std::string target, fs_direntr
 }
 
 
-
-
 /*
- * @brief this function access to the point second last element along the path
+ * @brief recursively access the path, access to the point second last element along the path
+ * @requirement size of the vector > 2
  * @param block is the block of the next inode
- *
+ * @return a lock to final entry
+ * @return also the block will be inode block number of the last entry on the path
+ * @note hand in hand lock might fail due to misunderstanding of compiler
  * */
 Acc Disk_Server::_access(lock_var curr_lk, int i, uint32_t& block, fs_inode& curr_node){
   //base case
-
-myPrint("access begin\n","");
-  
+  myPrint("access begin\n","");
   const std::string next_dir = request.path[i + 1];//safe
   std::string next_path = "";
   for(int j = 0; j <= i + 1; j++){
@@ -239,7 +233,7 @@ myPrint("_read\n","");
 
 
 void Disk_Server::_write(){
-myPrint("_write\n","");
+  myPrint("_write\n","");
   uint32_t block = 0;
   fs_inode din, fin;
   lock_var lv;
@@ -261,7 +255,6 @@ myPrint("_write\n","");
   shared_lock _detect_ = shared_lock(lock.find_lock(ss.str()));
 #endif
   //debug code
-
   access_inode(block, fin, 'f');
   if(request.tar_block > fin.size)
     throw NofileErr("exceed file size");
@@ -289,7 +282,7 @@ myPrint("_delete\n","");
   else
     dlv = shared_lock(lock.find_lock("@ROOT/"));
   fs_inode din, fin;
-  Acc acc = _access(boost::move(dlv), 0, din_block, din);
+  Acc acc = _access(boost::move(dlv), 0, din_block, din);//<-- it throws
   myPrint("_access returned\n","");
   myPrint("size: ",request.path.size()); 
 
@@ -310,7 +303,7 @@ myPrint("_delete\n","");
   //acquire the UNIQUE lock on the file(or dir)
   //this is to ensure no read/write is happening on the file
   ful = unique_lock(lock.find_lock(request.path_str));
-  access_inode(file_block, fin, 'a');
+  access_inode(file_block, fin, 'a');//<-- it throws
   //check if directory(if it is) is empty
   if(fin.type == 'd' && fin.size != 0)
     throw NofileErr("deleting non-empty dir");
@@ -353,8 +346,6 @@ void Disk_Server::_create(){
   uint32_t file_inode_block;
   if(request.usr == "")
     throw NofileErr("invalid user name");
-  if(!get_free_block(file_inode_block))
-    throw NofileErr("no free space on disk!");
   /*assert(file_inode_block!=0);*/
   fs_inode din;
   uint32_t dir_block = 0; 
@@ -364,13 +355,23 @@ void Disk_Server::_create(){
   else 
     dlv = shared_lock(lock.find_lock("@ROOT/"));
   Acc acc = _access(boost::move(dlv), 0, dir_block, din);
-
+  // NOTE: Deadlock attention!
+  // TODO: change it
+  if(!get_free_block(file_inode_block))
+    throw NofileErr("no free space on disk!");
   uint32_t free_block, dir_b_w;//free block for new dir entry
   bool need_expand = false;
   fs_direntry _inv[8]={{"",0}};//the directory block of change, intialized to all "",0
   if(acc.entry == din.size * 8){
     need_expand = true;
-    dir_b_w = iiblock(din);
+    // NOTE: it will throw while a free block has already been toggled
+    try{
+      dir_b_w = iiblock(din);
+    }
+    catch(NofileErr& err){
+      assert(free_list_access(file_inode_block, FREE));
+      throw err;
+    }
     //prepare _inv
    _inv[0] = {"", file_inode_block};
     strcpy(_inv[0].name, name.c_str());
@@ -465,7 +466,7 @@ void Disk_Server::handle(){
   //send the response
   /**/
   catch(const NofileErr& e){
-    /*std::cerr << e.msg << '\n';*/
+    std::cerr << e.msg << '\n';
     _close();
     delete this;//delete the handler when spawning thread
     return;//NOTE: not sure if work

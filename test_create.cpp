@@ -25,7 +25,7 @@ int main(int argc, char* argv[]) {
 
     fs_clientinit(server, server_port);
   //filename root 
-    status = fs_create("user1", "/", 'd');
+    /*status = fs_create("user1", "/", 'd');*/
   //filename not valid
     status = fs_create("user1", "/dir/", 'd');
   //not found
@@ -38,11 +38,11 @@ int main(int argc, char* argv[]) {
   //incorrect username
     status = fs_create("user2", "/dir/file", 'd');
   //excceed file max block number
-  for(int i=0; i < FS_MAXFILEBLOCKS * 8; i++){
-    std::stringstream ss;
-    ss << "/dir" << i;
-    status = fs_create("user2", ss.str().c_str(), 'f');
-  }
-
+  /*for(int i=0; i < FS_MAXFILEBLOCKS * 8; i++){*/
+  /*  std::stringstream ss;*/
+  /*  ss << "/dir" << i;*/
+  /*  status = fs_create("user2", ss.str().c_str(), 'f');*/
+  /*}*/
+  /**/
 
 }

@@ -10,7 +10,7 @@
 #include <iostream>
 #include <string>
 #include <sys/socket.h>
-/*#define LOG*/
+#define LOG
 /*Server::Server():port{}*/
 Server::Server(char* port):port{port}{}
 Server::Server(int newfd):fd{newfd}{}
@@ -130,13 +130,15 @@ std::vector<std::string> Server::parse_del(std::string& str, char del){
   const int MAX_MESSAGE_SIZE = 20 + 4 + FS_MAXUSERNAME + FS_MAXPATHNAME + 100;
   char file[MAX_MESSAGE_SIZE];
   bool flag=false;
+  if(*str.rbegin() == '/')
+    throw NofileErr("cannot end with /");
   while(ss.getline(file, MAX_MESSAGE_SIZE, del)){
     std::string file_str(file);
     if(file_str == "" && del == '/')//only if parsing pathname TODO: test the functionality
     {
       //only one root allowed
       if(flag)
-        throw NofileErr("mal formed pathname, you have //");
+        throw NofileErr("mal formed pathname, you have ..//..");
       file_str = "@ROOT"; 
       flag = true;
     }
@@ -245,12 +247,12 @@ void Server::_send(){
   if(request.rtype == Rtype::READ)
   {
     size = FS_BLOCKSIZE + str_in.length() + 1; 
-    char out[size]={};
+    char out[size];
     strcpy(out, str_in.c_str()); 
     memcpy(out + str_in.length()+1, request.content, FS_BLOCKSIZE);
     send(fd, out, size, MSG_NOSIGNAL);
   } else{
-    char out[size]={};
+    char out[size];
     strcpy(out, str_in.c_str()); 
     send(fd, out, size, MSG_NOSIGNAL);
   }
