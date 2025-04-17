@@ -13,6 +13,9 @@ int main(int argc, char* argv[]) {
     int server_port = atoi(argv[2]);
     fs_clientinit(server, server_port);
 
+
+    fs_create("u1", "/delete_test", 'd');
+    fs_create("u1", "/delete_test/file.txt", 'f');
     // assume this structure exists from test_create
     fs_delete("u1", "/delete_test/file.txt");
 

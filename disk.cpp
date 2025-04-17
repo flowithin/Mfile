@@ -5,7 +5,7 @@
 #include <sstream>
 #include <unistd.h>
 /*#define LOG_FL*/
-#define LOG
+/*#define LOG*/
 /*#define LOCK_DETECT*/
 template <typename T, typename...>
 void myPrint(std::string words, const T& t){
@@ -293,7 +293,7 @@ myPrint("_delete\n","");
   myPrint("_access returned\n","");
   myPrint("size: ",request.path.size()); 
 
-  //debug code
+  //debug code, this code is for checking if the lock is REALLY held
   #ifdef LOCK_DETECT
   std::stringstream ss;
   for(int i=0; i < request.path.size() -1; i++)
@@ -305,22 +305,17 @@ myPrint("_delete\n","");
 
   //should have unique lock
   myPrint("delete sleep\n","");
-  /*sleep(1000);*/
   uint32_t file_entry = acc.entry;//the entry #
   uint32_t file_block = acc.inv.get()[file_entry].inode_block;//the inode block of file
   //acquire the UNIQUE lock on the file(or dir)
   //this is to ensure no read/write is happening on the file
   ful = unique_lock(lock.find_lock(request.path_str));
-  /*std::cout << "delete ful before\n";*/
-  /*shared_lock _detect_ = shared_lock(lock.find_lock(request.path_str));*/
-  /*std::cout << "delete ful after\n";*/
   access_inode(file_block, fin, 'a');
   //check if directory(if it is) is empty
   if(fin.type == 'd' && fin.size != 0)
     throw NofileErr("deleting non-empty dir");
   //freeing block of the deleted
   for(size_t j = 0; j < fin.size; j++){
-    //TODO: free_list_access to multiple function
     assert(free_list_access(fin.blocks[j], FREE));
   }
   int size = 0;
@@ -346,9 +341,7 @@ myPrint("_delete\n","");
     acc.inv.get()[file_entry].inode_block = 0;
     disk_writeblock(din.blocks[file_entry/8], acc.inv.get() + file_entry/8*8);//delete the entry in the inv
   }
-  //clear its space in lock
   myPrint("path_str = ", request.path_str );
-  
 }
 
 
@@ -362,7 +355,7 @@ void Disk_Server::_create(){
     throw NofileErr("invalid user name");
   if(!get_free_block(file_inode_block))
     throw NofileErr("no free space on disk!");
-  assert(file_inode_block!=0);
+  /*assert(file_inode_block!=0);*/
   fs_inode din;
   uint32_t dir_block = 0; 
   lock_var dlv; 

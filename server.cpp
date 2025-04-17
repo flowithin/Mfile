@@ -10,7 +10,7 @@
 #include <iostream>
 #include <string>
 #include <sys/socket.h>
-#define LOG
+/*#define LOG*/
 /*Server::Server():port{}*/
 Server::Server(char* port):port{port}{}
 Server::Server(int newfd):fd{newfd}{}
