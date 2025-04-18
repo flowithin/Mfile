@@ -993,7 +993,6 @@
 	entry 988: dir988, inode block 1113
 	entry 989: dir989, inode block 1114
 	entry 990: dir990, inode block 1115
-	entry 991: dir991, inode block 1116
 
 /dir0 (type d) (inode block 1)
 	owner: user2
@@ -5950,9 +5949,4 @@
 	size: 0
 	data disk blocks: 
 
-/dir991 (type d) (inode block 1116)
-	owner: user2
-	size: 0
-	data disk blocks: 
-
-2979 disk blocks free
+2980 disk blocks free

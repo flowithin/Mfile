@@ -196,7 +196,7 @@ uint32_t iiblock(fs_inode& inode){
   if(inode.size == FS_MAXFILEBLOCKS)
     throw NofileErr("maximum file size");
   if(!get_free_block(free_block))
-    throw NofileErr("no free block");
+    throw NofileErr("no free block in iiblock");
   inode.blocks[inode.size++] = free_block;
   return free_block;
 }
@@ -355,10 +355,10 @@ void Disk_Server::_create(){
   else 
     dlv = shared_lock(lock.find_lock("@ROOT/"));
   Acc acc = _access(boost::move(dlv), 0, dir_block, din);
-  // NOTE: Deadlock attention!
-  // TODO: change it
+  //  NOTE: Deadlock attention!
+  //  TODO: change it
   if(!get_free_block(file_inode_block))
-    throw NofileErr("no free space on disk!");
+    throw NofileErr("no free space on disk! at" + request.path_str);
   uint32_t free_block, dir_b_w;//free block for new dir entry
   bool need_expand = false;
   fs_direntry _inv[8]={{"",0}};//the directory block of change, intialized to all "",0
@@ -397,7 +397,7 @@ void Disk_Server::_create(){
 
 void print_fl(){
   #ifdef LOG_FL
-  std::cout << "---------FREE LIST-----------------\n";
+  std::cout << "---------FREE LIST-------------\n";
   for(int i=0; i < 106;i++){
     std::cout << Disk_Server::free_list[i] << " ";
   }

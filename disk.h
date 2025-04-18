@@ -4,6 +4,7 @@
 #include <boost/thread/pthread/mutex.hpp>
 #include <boost/thread/pthread/shared_mutex.hpp>
 #include "server.h"
+#include <cstdint>
 #include <memory>
 #include <unordered_map>
 #include <boost/thread.hpp>
@@ -30,6 +31,7 @@ struct Acc{
   std::unique_ptr<fs_direntry[]> inv;
 };
 
+uint32_t iiblock(fs_inode& inode);
 struct Lock{
   Lock();
   boost::mutex mem_mt;
@@ -53,5 +55,6 @@ class Disk_Server : public Server{
   void print_req();
   Disk_Server(int newfd);
   void handle();
+  friend uint32_t iiblock(fs_inode& inode);
 };
 

@@ -1,6 +1,9 @@
+#include <fs_param.h>
 #include <iostream>
 #include <cassert>
 #include <cstdlib>
+#include <sstream>
+#include <unistd.h>
 #include "fs_client.h"
 
 
@@ -20,23 +23,18 @@ int main(int argc, char* argv[]) {
     server = argv[1];
     server_port = atoi(argv[2]);
 
+
+  const int max_block_num_remain = 4096 - 9 * FS_MAXFILEBLOCKS - 1;
     fs_clientinit(server, server_port);
 
-    status = fs_create("user1", "/dir", 'd');
-    assert(!status);
+  //should occupy the file system
+    std::stringstream ss;
+    ss << "/dir987/dir1" ;
+    status = fs_create("user2", ss.str().c_str(), 'd');
+    status = fs_delete("user2", "/dir0/dir0");
+    status = fs_create("user2", ss.str().c_str(), 'd');
+    status = fs_delete("user2", "/dir0/dir1");
+    status = fs_create("user2", ss.str().c_str(), 'd');
+ 
 
-    status = fs_create("user1", "/dir/file", 'f');
-    assert(!status);
-
-    status = fs_writeblock("user1", "/dir/file", 0, writedata);
-    assert(!status);
-
-    status = fs_readblock("user1", "/dir/file", 0, readdata);
-    assert(!status);
-
-    status = fs_delete("user1", "/dir/file");
-    assert(!status);
-
-    status = fs_delete("user1", "/dir");
-    assert(!status);
 }

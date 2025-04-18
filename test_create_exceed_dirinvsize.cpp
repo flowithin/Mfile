@@ -3,6 +3,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <sstream>
+#include <unistd.h>
 #include "fs_client.h"
 
 
@@ -23,24 +24,16 @@ int main(int argc, char* argv[]) {
     server_port = atoi(argv[2]);
 
 
+  const int max_block_num_remain = 4096 - 9 * FS_MAXFILEBLOCKS - 1;
     fs_clientinit(server, server_port);
+
   //should occupy the file system
-  for(int j=0; j < 8 * FS_MAXFILEBLOCKS; j++){
     std::stringstream ss;
-    ss << "/dir" << j;
-    status = fs_create("user2", ss.str().c_str(), 'f');
-  }
-  for(int i=0; i < 4096 - 8* FS_MAXFILEBLOCKS - 1; i++){
-    std::stringstream ss;
-    ss << "/dir" << i;
-    std::stringstream ss2(ss.str());
-  for(int j=0; j < 8 * FS_MAXFILEBLOCKS; j++){
-    std::stringstream ss;
-    ss2 << "/dir" << j;
-    status = fs_create("user2", ss2.str().c_str(), 'f');
-  }
-
-  }
-
+    ss << "/dir" << 8 * FS_MAXFILEBLOCKS - 1;
+    status = fs_create("user2", ss.str().c_str(), 'd');
+    std::stringstream ss2;
+    ss2 << "/dir" << 8 * FS_MAXFILEBLOCKS;
+    status = fs_create("user2", ss2.str().c_str(), 'd');
+ 
 
 }
