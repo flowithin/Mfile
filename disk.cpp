@@ -5,7 +5,7 @@
 #include <sstream>
 #include <unistd.h>
 /*#define LOG_FL*/
-#define LOG
+/*#define LOG*/
 /*#define LOCK_DETECT*/
 template <typename T, typename...>
 void myPrint(std::string words, const T& t){
@@ -466,7 +466,7 @@ void Disk_Server::handle(){
   //send the response
   /**/
   catch(const NofileErr& e){
-    std::cerr << e.msg << '\n';
+    /*std::cerr << e.msg << '\n';*/
     _close();
     delete this;//delete the handler when spawning thread
     return;//NOTE: not sure if work
