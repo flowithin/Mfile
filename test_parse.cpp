@@ -27,6 +27,7 @@ int main(int argc, char* argv[]) {
     status = fs_create("user1", "/dir//", 'd');
 
     status = fs_create("user1", "/d ir/file", 'f');
+    status = fs_create("user/1", "/d ir/file", 'f');
     status = fs_create("user1", "/dir/file  ", 'f');
 
     status = fs_writeblock("user1", "/direeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee/file", 0, writedata);
