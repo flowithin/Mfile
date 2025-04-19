@@ -1,5 +1,8 @@
 #include "disk.h"
+#include <boost/regex.hpp>
 #include <boost/function/function_base.hpp>
+#include <boost/regex/v4/regex_fwd.hpp>
+#include <boost/regex/v4/regex_match.hpp>
 #include <cassert>
 #include <iostream>
 #include <sstream>
@@ -231,17 +234,15 @@ myPrint("_read\n","");
 
 
 
-
 void Disk_Server::_write(){
   myPrint("_write\n","");
   uint32_t block = 0;
   fs_inode din, fin;
   lock_var lv;
   {
-    lock_var lk = request.path.size() <= 2 ? unique_lock(lock.find_lock("@ROOT/")) : 
-                                             shared_lock(lock.find_lock("@ROOT/"));
+    lock_var sl = shared_lock(lock.find_lock("@ROOT/"));
     /*lock_var lk = shared_lock(lock.find_lock("@ROOT/")); */
-    Acc acc = _access(boost::move(lk), 0, block, din);
+    Acc acc = _access(boost::move(sl), 0, block, din);
     block = acc.inv.get()[acc.entry].inode_block;
     lv = unique_lock(lock.find_lock(request.path_str));
   }
@@ -251,7 +252,7 @@ void Disk_Server::_write(){
   std::stringstream ss;
   for(int i=0; i < request.path.size() -1; i++)
     ss << request.path[i] << "/";
-  myPrint("ss.str(): ", ss.str() );
+  myPrint("ss.str(): ", ss.str());
   shared_lock _detect_ = shared_lock(lock.find_lock(ss.str()));
 #endif
   //debug code
@@ -272,7 +273,7 @@ void Disk_Server::_write(){
 
 
 void Disk_Server::_delete(){
-myPrint("_delete\n","");
+  myPrint("_delete\n","");
   print_lock_map(lock.file_locks);
   uint32_t din_block = 0;
   lock_var ful;
@@ -285,7 +286,6 @@ myPrint("_delete\n","");
   Acc acc = _access(boost::move(dlv), 0, din_block, din);//<-- it throws
   myPrint("_access returned\n","");
   myPrint("size: ",request.path.size()); 
-
   //debug code, this code is for checking if the lock is REALLY held
   #ifdef LOCK_DETECT
   std::stringstream ss;
@@ -295,7 +295,6 @@ myPrint("_delete\n","");
   shared_lock _detect_ = shared_lock(lock.find_lock(ss.str()));
 #endif
   //debug code
-
   //should have unique lock
   myPrint("delete sleep\n","");
   uint32_t file_entry = acc.entry;//the entry #
@@ -356,7 +355,6 @@ void Disk_Server::_create(){
     dlv = shared_lock(lock.find_lock("@ROOT/"));
   Acc acc = _access(boost::move(dlv), 0, dir_block, din);
   //  NOTE: Deadlock attention!
-  //  TODO: change it
   if(!get_free_block(file_inode_block))
     throw NofileErr("no free space on disk! at" + request.path_str);
   uint32_t free_block, dir_b_w;//free block for new dir entry
@@ -364,7 +362,6 @@ void Disk_Server::_create(){
   fs_direntry _inv[8]={{"",0}};//the directory block of change, intialized to all "",0
   if(acc.entry == din.size * 8){
     need_expand = true;
-    // NOTE: it will throw while a free block has already been toggled
     try{
       dir_b_w = iiblock(din);
     }

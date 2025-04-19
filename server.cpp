@@ -235,7 +235,9 @@ void Server::to_req(std::vector<std::string>&& vec){
   request.path_str = "@ROOT" + vec[2] + '/';
   if(request.tar_block >= FS_MAXFILEBLOCKS)
     throw NofileErr("exceed file size");
-  /*myPrint("pathstr ", request.path_str );*/
+  /*boost::regex reg("^@ROOT(?:\/[^\s\/]+)*\/$");*/
+  /*assert(boost::regex_match(request.path_str, reg));*/
+  /*std::cout << "path_str: " << request.path_str ;*/
 }
 
 
