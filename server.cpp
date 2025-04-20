@@ -1,20 +1,6 @@
 #include "disk.h"
-#include <boost/regex.hpp>
-#include <boost/thread/exceptions.hpp>
-#include <cstdint>
-#include <cstdlib>
-#include <cstring>
-#include "fs_param.h"
-#include "fs_server.h"
-#include <exception>
-#include <iostream>
-#include <string>
-#include <sys/socket.h>
-/*#define LOG*/
-/*Server::Server():port{}*/
 Server::Server(char* port):port{port}{}
 Server::Server(int newfd):fd{newfd}{}
-
 
 /*
  * @brief initialize socket structures and start listening
@@ -26,8 +12,6 @@ void Server::init(){
   hints.ai_family = AF_UNSPEC;
   hints.ai_socktype = SOCK_STREAM;
   hints.ai_flags = AI_PASSIVE;
-  /*myPrint("port: ",port ); */
-  /*port = "6969";*/
   if(getaddrinfo(NULL, port, &hints, &res) == -1)
   {
     perror("getaddrinfo");//DNS look up
@@ -46,7 +30,6 @@ void Server::init(){
     exit(1);
   }
   // Configure a sockaddr_in for the accepting socket.
-  // Bind to the port.  Use bind().
   bind(fd, res->ai_addr, res->ai_addrlen);
   struct sockaddr_in addr;
   socklen_t addrlen = sizeof(addr);
@@ -58,7 +41,6 @@ void Server::init(){
   print_port(ntohs(addr.sin_port));
   // Begin listening for incoming connections.  Use listen().
   listen(fd, 30);
-  // Serve incoming connections one by one forever.
 }
 
 /*
@@ -86,24 +68,16 @@ while (1) {
 
 void Server::_recv(){
   int numbytes = 0;
-  //is it really necessary? since byte by byte will also block (while this scheme will return immediate to a stream sent)
-  //this schemem will fail if the client side do multiple send to send a single request, but upon testing it seems not the case
-  //dealing with -1 should be necessary
-  //There MIGHT be unexpected thing happen in concurrent program, if the message is somehow delayed
   const int MAX_MESSAGE_SIZE = 20 + 4 + FS_MAXUSERNAME + FS_MAXPATHNAME + 100;
   int idx = 0;
   char buf[MAX_MESSAGE_SIZE + FS_BLOCKSIZE];
   char ch;
-  /*if((numbytes = recv(fd, buf, MAX_MESSAGE_SIZE-1, 0)) == -1)*/
   do {
     numbytes = recv(fd, &ch, 1, MSG_WAITALL);
     if(numbytes <= 0 || idx >= MAX_MESSAGE_SIZE)
       throw NofileErr("invalid request");
     buf[idx++] = ch;
-    #ifdef LOG
-    std::cout << ch;
-#endif
-  }while (ch!='\0');
+  } while (ch!='\0');
   // automatically detect the portion up to <NULL>
   str_in = buf;
   std::string req = str_in.substr(0, str_in.find(' '));
@@ -113,11 +87,6 @@ void Server::_recv(){
     //FS_WRITEBLOCK
     memcpy(request.content, buf+idx, FS_BLOCKSIZE);
   }
-  #ifdef LOG
-  buf[str_in.length()] = '#'; //for debug purpose
-  printf("\nserver received %s\n size: %d\n", buf, idx);
-  #endif
-  // Close connection.  Use close().
 }
 
 /*
@@ -142,19 +111,8 @@ std::vector<std::string> Server::parse_del(std::string& str, char del){
       file_str = "@ROOT"; 
       flag = true;
     }
-    //doesn't need this
-    /*int n = file_str.find(' ');*/
-    /*std::cout << "n= " << n << '\n';*/
-    /*if (n != -1)*/
-    /*  throw NofileErr("space shouldn't appear!!\n");*/
     path.push_back(file_str);
-    #ifdef LOG
-    std::cout << path[i++] << '\n';
-    #endif
   }
-  #ifdef LOG
-  std::cout << "parse_del(" << str << ") with " << del << " \n";
-  #endif
   return path;
 }
 /*
@@ -183,8 +141,6 @@ void Server::to_req(std::vector<std::string>&& vec){
     // TODO: check if the size and format are correct
     // NOTE: some field don't need initializing
     uint32_t _f_;
-    /*if(!get_free_block(_f_, false))*/
-    /*  throw NofileErr("no free space");*/
     if(vec.size() != 4)
       throw NofileErr("should be size of 4");
     Ftype ft;
@@ -201,12 +157,7 @@ void Server::to_req(std::vector<std::string>&& vec){
     if(!boost::regex_match(vec[3], num))
       throw NofileErr("invalid block number");
     uint32_t block=0;
-    try{
-      block = std::stoul(vec[3]);
-    }
-    catch(...){throw NofileErr("invalid block number");}
-    if(vec[3][0] == '0' && block != 0)
-      throw NofileErr("invalid block number");
+    block = std::stoul(vec[3]);
     request = Request{.rtype = Rtype::READ, .ftype = Ftype::FILE, .usr = vec[1], .path = p, .content = "", .tar_block =  block};
 
   } else if(vec[0] == "FS_WRITEBLOCK"){
@@ -218,15 +169,11 @@ void Server::to_req(std::vector<std::string>&& vec){
     request.ftype = Ftype::FILE;
     request.usr = vec[1];
     request.path = p;
-    // TODO: use regex
     boost::regex num("0|[1-9][0-9]*");
     if(!boost::regex_match(vec[3], num))
       throw NofileErr("invalid block number");
     uint32_t block=0;
-    try{
-      block = std::stoul(vec[3]);
-    }
-    catch(...){throw NofileErr("invalid block number");}
+    block = std::stoul(vec[3]);
     request.tar_block = block;
   } else if(vec[0] == "FS_DELETE"){
     if(vec.size() != 3)
@@ -237,13 +184,7 @@ void Server::to_req(std::vector<std::string>&& vec){
   request.path_str = "@ROOT" + vec[2] + '/';
   if(request.tar_block >= FS_MAXFILEBLOCKS)
     throw NofileErr("exceed file size");
-  /*boost::regex reg("^@ROOT(?:\/[^\s\/]+)*\/$");*/
-  /*assert(boost::regex_match(request.path_str, reg));*/
-  /*std::cout << "path_str: " << request.path_str ;*/
 }
-
-
-
 
 void Server::_send(){
   /*std::string out = str_in + std::string(request.content);*/

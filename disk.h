@@ -51,11 +51,11 @@ class Disk_Server : public Server{
   void _create();
   void _delete();
   public:
+  void handle();
   static Lock lock;
   static std::vector<bool> free_list;
   void print_req();
   Disk_Server(int newfd);
-  void handle();
   friend uint32_t iiblock(fs_inode& inode);
 };
 

@@ -10,7 +10,8 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <vector>
-/*#pragma */
+#include <boost/regex.hpp>
+#include <boost/thread/exceptions.hpp>
 
 enum class Rtype {READ, WRITE, CREATE, DELETE};
 enum class Ftype {FILE, DIR};
