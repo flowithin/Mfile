@@ -26,42 +26,19 @@ int main(int argc, char* argv[]) {
 
   const int max_block_num_remain = 4096 - 9 * FS_MAXFILEBLOCKS - 1;
     fs_clientinit(server, server_port);
-
   //should occupy the file system
-  for(int j=0; j < 8 * FS_MAXFILEBLOCKS + 1; j++){
     std::stringstream ss;
-    ss << "/dir" << j;
-    status = fs_create("user2", ss.str().c_str(), 'd');
-  }
-  /*sleep(10);*/
-  for(int i=0; i < 3; i++){
-    std::stringstream ss;
-    ss << "/dir" << i;
-    for(int j=0; j < 8 * FS_MAXFILEBLOCKS; j++){
-      std::stringstream ss2;
-      ss2 << ss.str();
-      ss2 << "/dir" << j;
-      std::cout << ss2.str() << '\n';
-      status = fs_create("user2", ss2.str().c_str(), 'f');
-      status = fs_writeblock("user2", ss2.str().c_str(), 0, writedata);
-      status = fs_writeblock("user2", ss2.str().c_str(), 1, writedata);
-      status = fs_writeblock("user2", ss2.str().c_str(), 2, writedata);
+    ss << "/dir987/dir1";
+    status = fs_create("user2", ss.str().c_str(), 'f');
+    status = fs_writeblock("user2", ss.str().c_str(), 0, writedata);
+    status = fs_writeblock("user2", ss.str().c_str(), 1, writedata);
+    status = fs_delete("user2", "/dir0/dir0");
+    status = fs_writeblock("user2", ss.str().c_str(), 0, writedata);
+    status = fs_create("user2", ss.str().c_str(), 'f');
+    status = fs_writeblock("user2", ss.str().c_str(), 0, writedata);
+    status = fs_delete("user2", "/dir0/dir1");
+    status = fs_writeblock("user2", ss.str().c_str(), 0, writedata);
+    status = fs_create("user2", ss.str().c_str(), 'f');
  
-    if(i * 8 * FS_MAXFILEBLOCKS  + j> max_block_num_remain)
-      break;
-    }
-  }
-  for(int i=0; i < 3; i++){
-    std::stringstream ss;
-    ss << "/dir" << i;
-    for(int j=0; j < 8 * FS_MAXFILEBLOCKS; j++){
-      std::stringstream ss2;
-      ss2 << ss.str();
-      ss2 << "/dir" << j;
-      std::cout << ss2.str() << '\n';
-      status = fs_create("user2", ss2.str().c_str(), 'f');
-     if(i * 8 * FS_MAXFILEBLOCKS  + j> max_block_num_remain)
-        break;
-    }
-  }
+
 }

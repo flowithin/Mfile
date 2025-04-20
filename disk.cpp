@@ -4,8 +4,10 @@
 #include <boost/regex/v4/regex_fwd.hpp>
 #include <boost/regex/v4/regex_match.hpp>
 #include <cassert>
+#include <cstdint>
 #include <iostream>
 #include <sstream>
+#include <sys/types.h>
 #include <unistd.h>
 /*#define LOG_FL*/
 /*#define LOG*/
@@ -66,7 +68,7 @@ Disk_Server::Disk_Server(int fd):Server(fd){}
  * @return true if the state toggles
  * */
 bool free_list_access(uint32_t idx, bool state){
-  boost::lock_guard<boost::mutex> _lock(Disk_Server::lock.mem_mt);
+  boost::lock_guard<boost::mutex> _lock(Disk_Server::lock.mem_mt_free);
   bool is_free = Disk_Server::free_list[idx] != state;
   Disk_Server::free_list[idx] = state;
   return is_free;
@@ -80,8 +82,8 @@ bool free_list_access(uint32_t idx, bool state){
  * @param free: free block
  * */
 bool get_free_block(uint32_t& free, bool toggle = true){
-  boost::lock_guard<boost::mutex> _lock(Disk_Server::lock.mem_mt);
-  for(size_t i = 0; i < Disk_Server::free_list.size(); i++){
+  boost::lock_guard<boost::mutex> _lock(Disk_Server::lock.mem_mt_free);
+  for(size_t i = 1; i < Disk_Server::free_list.size(); i++){
     if(Disk_Server::free_list[i] == FREE){
       //free block
       free = i;
@@ -176,10 +178,10 @@ Acc Disk_Server::_access(lock_var curr_lk, int i, uint32_t& block, fs_inode& cur
       nl = shared_lock(lock.find_lock(next_path));
     curr_lk.swap(nl);
   }
-  std::string curr_path;
-  for(int j = 0; j <= i; j++){
-    curr_path += request.path[j] + '/';
-  }
+  /*std::string curr_path;*/
+  /*for(int j = 0; j <= i; j++){*/
+  /*  curr_path += request.path[j] + '/';*/
+  /*}*/
   /*std::cout << "_detect_ curr_path lock\n";*/
   /*unique_lock _detect_ = unique_lock(lock.find_lock(curr_path));*/
   /*std::cout << "_detect_ next_path lock\n";*/
@@ -241,7 +243,6 @@ void Disk_Server::_write(){
   lock_var lv;
   {
     lock_var sl = shared_lock(lock.find_lock("@ROOT/"));
-    /*lock_var lk = shared_lock(lock.find_lock("@ROOT/")); */
     Acc acc = _access(boost::move(sl), 0, block, din);
     block = acc.inv.get()[acc.entry].inode_block;
     lv = unique_lock(lock.find_lock(request.path_str));
@@ -299,6 +300,7 @@ void Disk_Server::_delete(){
   myPrint("delete sleep\n","");
   uint32_t file_entry = acc.entry;//the entry #
   uint32_t file_block = acc.inv.get()[file_entry].inode_block;//the inode block of file
+  uint32_t dir_block = din.blocks[file_entry/8];
   //acquire the UNIQUE lock on the file(or dir)
   //this is to ensure no read/write is happening on the file
   ful = unique_lock(lock.find_lock(request.path_str));
@@ -307,32 +309,33 @@ void Disk_Server::_delete(){
   if(fin.type == 'd' && fin.size != 0)
     throw NofileErr("deleting non-empty dir");
   //freeing block of the deleted
-  for(size_t j = 0; j < fin.size; j++){
-    assert(free_list_access(fin.blocks[j], FREE));
-  }
-  int size = 0;
+ int size = 0;
   for(int i = file_entry/8 * 8; i < file_entry/8 * 8 + 8; i++){
     if(acc.inv.get()[i].inode_block != 0)
       size++;
   }
-  //freeing inode of the file(dir)
-  assert(free_list_access(acc.inv.get()[file_entry].inode_block, FREE));
   if(size == 1)
   {
     //shrink the dir
-    //free the block of the inventory
-    assert(free_list_access(din.blocks[file_entry/8], FREE));
     for(int j = file_entry/8; j < din.size-1; j++){
       din.blocks[j] = din.blocks[j+1];
     }
     din.size--;
     //write the inode block for the dir
     //we don't need to clear the content
+    // NOTE: these should be in a critical section
     disk_writeblock(din_block, &din);
+    //free the block of the inventory
+    assert(free_list_access(dir_block, FREE));
   } else {
     acc.inv.get()[file_entry].inode_block = 0;
     disk_writeblock(din.blocks[file_entry/8], acc.inv.get() + file_entry/8*8);//delete the entry in the inv
   }
+  for(size_t j = 0; j < fin.size; j++){
+    assert(free_list_access(fin.blocks[j], FREE));
+  }
+  //freeing inode of the file(dir)
+  assert(free_list_access(file_block, FREE));
   myPrint("path_str = ", request.path_str );
 }
 
@@ -354,7 +357,6 @@ void Disk_Server::_create(){
   else 
     dlv = shared_lock(lock.find_lock("@ROOT/"));
   Acc acc = _access(boost::move(dlv), 0, dir_block, din);
-  //  NOTE: Deadlock attention!
   if(!get_free_block(file_inode_block))
     throw NofileErr("no free space on disk! at" + request.path_str);
   uint32_t free_block, dir_b_w;//free block for new dir entry

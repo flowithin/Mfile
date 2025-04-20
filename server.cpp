@@ -193,6 +193,7 @@ void Server::to_req(std::vector<std::string>&& vec){
     else if(vec[3] == "f") ft = Ftype::FILE;
     else throw NofileErr("invalid type");
     request = Request{.rtype = Rtype::CREATE, .ftype = ft, .usr = vec[1], .path = p, .content = "", .tar_block = 0 };
+
   } else if(vec[0] == "FS_READBLOCK"){
     if(vec.size() != 4)
       throw NofileErr("should be size of 4");
@@ -207,6 +208,7 @@ void Server::to_req(std::vector<std::string>&& vec){
     if(vec[3][0] == '0' && block != 0)
       throw NofileErr("invalid block number");
     request = Request{.rtype = Rtype::READ, .ftype = Ftype::FILE, .usr = vec[1], .path = p, .content = "", .tar_block =  block};
+
   } else if(vec[0] == "FS_WRITEBLOCK"){
     if(vec.size() != 4)
       throw NofileErr("should be size of 4");

@@ -35,6 +35,7 @@ uint32_t iiblock(fs_inode& inode);
 struct Lock{
   Lock();
   boost::mutex mem_mt;
+  boost::mutex mem_mt_free;
   std::unordered_map<std::string, boost::shared_mutex> file_locks;
   boost::shared_mutex& find_lock(std::string str);
   void remove_lock(std::string str);
