@@ -29,6 +29,9 @@ int main(int argc, char* argv[]) {
     fs_writeblock("user1", "/dir/file.txt", i, writedata);
   }
   status = fs_writeblock("user1", "/dir/file.txt", 0, writedata);
-  status = fs_writeblock("user1", "/dir/file.txt", 1, writedata);
-  status = fs_writeblock("user1", "/dir/file.txt", 3, writedata);
+  for(int i=0; i < 125; i++){
+    status = fs_readblock("user1", "/dir/file.txt", i, readdata);
+  }
+ 
+
 }
