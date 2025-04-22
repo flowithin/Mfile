@@ -247,8 +247,6 @@ void Disk_Server::_delete(){
     }
     din.size--;
     //write the inode block for the dir
-    //we don't need to clear the content
-    // NOTE: these should be in a critical section
     disk_writeblock(din_block, &din);
     //free the block of the inventory
     assert(free_list_access(dir_block, FREE));
