@@ -138,8 +138,6 @@ void Server::to_req(std::vector<std::string>&& vec){
   if(p[0] != "@ROOT")
     throw NofileErr("mal formed path");
   if(vec[0] == "FS_CREATE"){
-    // TODO: check if the size and format are correct
-    // NOTE: some field don't need initializing
     uint32_t _f_;
     if(vec.size() != 4)
       throw NofileErr("should be size of 4");
@@ -186,8 +184,10 @@ void Server::to_req(std::vector<std::string>&& vec){
     throw NofileErr("exceed file size");
 }
 
+/*
+ * @brief This function send the response (if successful) to the client
+ * */
 void Server::_send(){
-  /*std::string out = str_in + std::string(request.content);*/
   uint32_t size = str_in.length() + 1;
   if(request.rtype == Rtype::READ)
   {
