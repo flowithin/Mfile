@@ -1,9 +1,0 @@
-*
-!disk.*
-!server.*
-!server_run.cpp
-!libfs*
-!fs_*
-!Makefile
-!*/
-
