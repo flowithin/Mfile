@@ -13,10 +13,6 @@
 using shared_lock = boost::shared_lock<boost::shared_mutex>;
 using unique_lock = boost::unique_lock<boost::shared_mutex>;
 using lock_var = std::variant<shared_lock, unique_lock>;
-/*struct Read_lock(){*/
-/*  ReadLock(boost::shared_mutex& sd_mt)*/
-/*        : mem_lock(mem_mt), shared_lock(sd_mt) {}*/
-/*}*/
 
 void print_fl();
 bool get_free_block(uint32_t& free, bool toggle);

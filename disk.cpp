@@ -34,8 +34,6 @@ std::vector<bool> Disk_Server::free_list = [](){
   std::vector<bool> v(4096);
   //free list traverse
   free_list_init(0, v);
-  /*for(auto v_ : v)*/
-  /*std::cout << v_ << ' ';*/
   return v;
 }();
 Disk_Server::Disk_Server(int fd):Server(fd){}
@@ -252,7 +250,7 @@ void Disk_Server::_delete(){
     assert(free_list_access(dir_block, FREE));
   } else {
     acc.inv.get()[file_entry].inode_block = 0;
-    disk_writeblock(din.blocks[file_entry/8], acc.inv.get() + file_entry/8*8);//delete the entry in the inv
+    disk_writeblock(dir_block, acc.inv.get() + file_entry/8*8);//delete the entry in the inv
   }
   for(size_t j = 0; j < fin.size; j++){
     assert(free_list_access(fin.blocks[j], FREE));
